@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>العواد للزراعة الذكية</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts for Arabic font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .main-container {
+            max-width: 420px; /* Constrain width for mobile-like experience */
+            margin: auto;
+            background-color: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex; /* Use flexbox for layout */
+            flex-direction: column; /* Stack children vertically */
+        }
+        .page {
+            display: none; /* Hide all pages by default */
+            flex-grow: 1; /* Allow pages to take available space */
+            overflow-y: auto; /* Enable scrolling for page content */
+            padding-bottom: 80px; /* Space for bottom nav */
+        }
+        .page.active {
+            display: block; /* Show active page */
+        }
+        .btn-primary {
+            background-color: #28a745;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #218838;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+        }
+        .nav-item {
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            border-radius: 0.375rem; /* rounded-md */
+        }
+        .nav-item.active {
+            background-color: #28a745;
+            color: white;
+        }
+        /* Custom modal for results and assistant */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.6); /* Slightly darker backdrop */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            /* Beautiful gradient background for general modals (Disease, Soil, Best Crop) */
+            background: linear-gradient(135deg, #e0ffe0 0%, #c6f6d5 100%); /* Fresh green gradient */
+            padding: 1.8rem; /* Increased padding */
+            border-radius: 1.25rem; /* rounded-2xl */
+            width: 90%;
+            max-width: 400px; /* Slightly wider */
+            text-align: center;
+            animation: fadeIn 0.3s ease-out;
+            position: relative;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3); /* Stronger, more diffused shadow */
+            border: 2px solid #a7f3d0; /* Soft green border */
+            color: #1a4d2e; /* Darker text for contrast */
+        }
+        .modal-content.chat-modal {
+            /* Beautiful gradient background for chat modal */
+            background: linear-gradient(to bottom, #f0f4f8, #ffffff); /* Soft grey to white gradient */
+            max-width: 90%;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem; /* Adjusted padding for chat modal */
+            border-radius: 1.25rem; /* rounded-2xl */
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+            border: 1px solid #d1d5db; /* Light grey border */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Chat specific styles */
+        .chat-bubble.sent {
+            text-align: right;
+        }
+        .chat-bubble.sent p {
+            background-color: #28a745;
+            color: white;
+            border-radius: 0.75rem;
+            padding: 0.5rem 1rem;
+            display: inline-block;
+            max-width: 80%;
+            margin-left: auto;
+            margin-right: 0;
+        }
+        .chat-bubble.received {
+            text-align: left;
+        }
+        .chat-bubble.received p {
+            background-color: #e5e7eb;
+            color: #1f2937;
+            border-radius: 0.75rem;
+            padding: 0.5rem 1rem;
+            display: inline-block;
+            max-width: 80%;
+            margin-right: auto;
+            margin-left: 0;
+        }
+        /* Ensure modal body scrolls if content is too long */
+        #modal-body {
+            max-height: 60vh; /* Max height for scrollable content */
+            overflow-y: auto; /* Enable vertical scrolling */
+            padding-left: 0.5rem; /* Small padding for scrollbar */
+            padding-right: 0.5rem;
+            text-align: right; /* Align text to right for RTL */
+        }
+        #modal-title {
+            color: #1a4d2e; /* Dark green for titles */
+        }
+        #modal-result button {
+            background-color: #10b981; /* Emerald green for button */
+            transition: background-color 0.3s ease;
+        }
+        #modal-result button:hover {
+            background-color: #059669;
+        }
+
+        /* Floating action buttons - positioned on the left */
+        .fab-container {
+            position: fixed;
+            bottom: 90px; /* Above bottom nav */
+            left: 1rem; /* Position on the left */
+            display: flex;
+            flex-direction: column; /* Stack vertically */
+            gap: 1rem;
+            z-index: 900;
+        }
+        .fab-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .fab-button:hover {
+            transform: scale(1.05);
+        }
+        .fab-button i {
+            font-size: 1.8rem;
+            color: white;
+        }
+        .fab-button.whatsapp {
+            background-color: #25D366; /* WhatsApp green */
+        }
+        .fab-button.assistant {
+            background-color: #8B5CF6; /* Purple for assistant */
+        }
+
+        /* Product category details styling */
+        .product-category-details summary {
+            background-color: #e0ffe0; /* Light green for summary */
+            border-radius: 8px;
+            padding: 1rem;
+            font-weight: bold;
+            color: #1a6d2b; /* Darker green text */
+            cursor: pointer;
+            list-style: none; /* Remove default arrow */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .product-category-details summary:hover {
+            background-color: #c8ffc8;
+        }
+        .product-category-details summary::after {
+            content: '\f053'; /* Font Awesome chevron-left */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            margin-right: 0.5rem;
+            transition: transform 0.2s ease-in-out;
+        }
+        .product-category-details[open] summary::after {
+            transform: rotate(-90deg); /* Rotate arrow when open */
+        }
+        .product-category-details .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Responsive grid for products */
+            gap: 1rem;
+            padding: 1rem;
+            background-color: #f9fff9; /* Lighter background for content */
+            border-radius: 0 0 12px 12px;
+            border-top: 1px solid #d0ffd0;
+        }
+        .product-item-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+            transition: transform 0.2s ease-in-out;
+        }
+        .product-item-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .product-item-card img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            border: 1px solid #f0f0f0;
+        }
+        .product-item-card h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+            min-height: 2.2em; /* Ensure consistent height for titles */
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .product-item-card p {
+            font-size: 0.7rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+            flex-grow: 1; /* Allow description to take available height */
+            min-height: 3em; /* Consistent height for description */
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .product-item-card .btn-primary {
+            font-size: 0.75rem;
+            padding: 0.4rem 0.8rem;
+            width: 100%;
+        }
+        
+        /* New Forum Specific Styles */
+        .forum-post {
+            background-color: #f9f9f9;
+            border-left: 4px solid #34d399; /* Emerald green border for new posts */
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .forum-question {
+            font-weight: 700;
+            color: #10b981;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px dashed #e0e0e0;
+            padding-bottom: 0.5rem;
+        }
+        .forum-answer {
+            background-color: #e6fffb;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-top: 0.75rem;
+            border: 1px solid #99f6e4;
+        }
+        .forum-answer .support-title {
+            font-weight: bold;
+            color: #0d9488; /* Teal color */
+            margin-bottom: 0.5rem;
+        }
+        /* Styling for the large recommendation card */
+        .iraq-rec-card {
+            background: linear-gradient(145deg, #10b981 0%, #059669 100%); /* Dark Green Gradient */
+            color: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px rgba(5, 150, 105, 0.4);
+            transition: transform 0.3s;
+        }
+        .iraq-rec-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="main-container">
+
+        <!-- Header -->
+        <header class="bg-white shadow-md p-4 sticky top-0 z-50">
+            <h1 class="text-xl font-bold text-center text-green-700">العواد للزراعة الذكية</h1>
+            <p id="network-status" class="text-xs text-center mt-1 font-medium"></p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="p-4 flex-grow overflow-y-auto">
+
+            <!-- Home Page -->
+            <div id="home" class="page active">
+                <!-- Welcome Message -->
+                <div class="card bg-green-100 border-green-300 text-green-900 mb-6 text-center">
+                    <h2 class="text-xl font-bold mb-2">مرحباً بك في تطبيق العواد للزراعة الذكية!</h2>
+                    <p class="text-sm">
+                        نحن هنا لندعمك في رحلتك الزراعية بتقديم أحدث الحلول والمعلومات.
+                    </p>
+                </div>
+
+                <!-- Removed Featured Recommendation Card -->
+
+                <h2 class="text-lg font-semibold mb-4 text-gray-800">خدماتنا الرئيسية</h2>
+                <div class="grid grid-cols-2 gap-4 text-center">
+                    <div onclick="showPage('diagnose')" class="card hover:shadow-lg transition-shadow cursor-pointer">
+                        <i class="fas fa-leaf fa-2x text-green-600 mb-2"></i>
+                        <p class="font-semibold text-gray-700">تشخيص الأمراض</p>
+                    </div>
+                    <div onclick="showPage('soil-analysis')" class="card hover:shadow-lg transition-shadow cursor-pointer">
+                        <i class="fas fa-vial fa-2x text-orange-500 mb-2"></i>
+                        <p class="font-semibold text-gray-700">تحليل التربة</p>
+                    </div>
+                    <div onclick="showPage('products')" class="card hover:shadow-lg transition-shadow cursor-pointer">
+                        <i class="fas fa-shopping-basket fa-2x text-blue-500 mb-2"></i>
+                        <p class="font-semibold text-gray-700">منتجاتنا</p>
+                    </div>
+                    <!-- General Guidance -->
+                    <div onclick="showPage('general-notes')" class="card hover:shadow-lg transition-shadow cursor-pointer">
+                        <i class="fas fa-clipboard-list fa-2x text-red-500 mb-2"></i>
+                        <p class="font-semibold text-gray-700">إرشادات عامة</p>
+                    </div>
+                    <div onclick="showPage('guide')" class="card hover:shadow-lg transition-shadow cursor-pointer">
+                        <i class="fas fa-book-open fa-2x text-teal-500 mb-2"></i>
+                        <p class="font-semibold text-gray-700">دليل الزراعة</p>
+                    </div>
+                    <div onclick="showPage('best-crop')" class="card hover:shadow-lg transition-shadow cursor-pointer">
+                        <i class="fas fa-seedling fa-2x text-green-500 mb-2"></i>
+                        <p class="font-semibold text-gray-700">تحديد أفضل محصول</p>
+                    </div>
+                    <div onclick="showPage('arab-crops')" class="card hover:shadow-lg transition-shadow cursor-pointer">
+                        <i class="fas fa-globe-americas fa-2x text-indigo-500 mb-2"></i>
+                        <p class="font-semibold text-gray-700">محاصيل عربية</p>
+                    </div>
+                    <div onclick="showPage('alawad-office')" class="card hover:shadow-lg transition-shadow cursor-pointer">
+                        <i class="fas fa-building fa-2x text-gray-500 mb-2"></i>
+                        <p class="font-semibold text-gray-700">مكتب العواد</p>
+                    </div>
+                    <!-- New Forum link on Home Page -->
+                    <div onclick="showPage('forum')" class="card hover:shadow-lg transition-shadow cursor-pointer col-span-2">
+                        <i class="fas fa-users fa-2x text-purple-600 mb-2"></i>
+                        <p class="font-semibold text-gray-700">منتدى المزارعين (سؤال وجواب)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diagnose Page -->
+            <div id="diagnose" class="page">
+                <button onclick="showPage('home')" class="btn-primary font-bold py-2 px-4 rounded-md mb-4 flex items-center justify-center">
+                    <i class="fas fa-arrow-right ml-2"></i> العودة للرئيسية
+                </button>
+                <h2 class="text-lg font-semibold mb-4 text-gray-800">تشخيص ذكي لأمراض المحاصيل</h2>
+                <div class="card">
+                    <div class="mb-4">
+                            <label for="symptom-description" class="block mb-2 font-medium text-gray-700">وصف الأعراض (اختياري):</label>
+                            <textarea id="symptom-description" rows="4" class="w-full p-2 border rounded-md focus:ring-green-500 focus:border-green-500" placeholder="يرجى وصف الأعراض التي تلاحظها على المحصول بدقة (مثال: اصفرار الأوراق على الطماطم، بقع بنية على أوراق الخيار، ذبول القمح)..."></textarea>
+                    </div>
+                    <div class="mb-4">
+                            <label class="block mb-2 font-medium text-gray-700">ارفع صورة للمحصول المصاب (إجباري):</label>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 relative">
+                                    <i class="fas fa-camera fa-3x text-gray-400"></i>
+                                    <p class="mt-2 text-sm text-gray-600">انقر لرفع صورة</p>
+                                    <input type="file" id="disease-image-upload" accept="image/*" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer">
+                            </div>
+                            <div id="disease-image-preview" class="mt-4 hidden">
+                                    <p class="text-sm text-gray-600 mb-2">الصورة المرفوعة:</p>
+                                    <img src="" alt="معاينة صورة المرض" class="max-w-full h-auto rounded-md shadow-sm">
+                            </div>
+                    </div>
+                    <button onclick="analyzeDisease()" class="w-full btn-primary font-bold py-3 px-4 rounded-md">تشخيص المرض</button>
+                </div>
+            </div>
+
+            <!-- Soil Analysis Page (Simplified Inputs) -->
+            <div id="soil-analysis" class="page">
+                <button onclick="showPage('home')" class="btn-primary font-bold py-2 px-4 rounded-md mb-4 flex items-center justify-center">
+                    <i class="fas fa-arrow-right ml-2"></i> العودة للرئيسية
+                </button>
+                <h2 class="text-lg font-semibold mb-4 text-gray-800">تحليل التربة السريع</h2>
+                <div class="card">
+                    <p class="text-sm text-gray-600 mb-4">للحصول على توصية سريعة، يمكنك إدخال البيانات المعروفة لديك أو رفع صورة للتربة. **الصورة أو البيانات الرقمية مطلوبة.**</p>
+                    <div class="space-y-3 mb-4">
+                        <input type="number" id="soil-ph" placeholder="درجة الحموضة (pH) (اختياري)" class="w-full p-2 border rounded-md">
+                        <input type="number" id="soil-nitrogen" placeholder="نسبة النيتروجين (ppm) (اختياري)" class="w-full p-2 border rounded-md">
+                        <input type="number" id="soil-phosphorus" placeholder="نسبة الفوسفور (ppm) (اختياري)" class="w-full p-2 border rounded-md">
+                        <input type="number" id="soil-potassium" placeholder="نسبة البوتاسيوم (ppm) (اختياري)" class="w-full p-2 border rounded-md">
+                    </div>
+                    <div class="mb-4">
+                            <label class="block mb-2 font-medium text-gray-700">ارفع صورة للتربة:</label>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 relative">
+                                    <i class="fas fa-image fa-3x text-gray-400"></i>
+                                    <p class="mt-2 text-sm text-gray-600">انقر لرفع صورة</p>
+                                    <input type="file" id="soil-image-upload" accept="image/*" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer">
+                            </div>
+                            <div id="soil-image-preview" class="mt-4 hidden">
+                                    <p class="text-sm text-gray-600 mb-2">الصورة المرفوعة:</p>
+                                    <img src="" alt="معاينة صورة التربة" class="max-w-full h-auto rounded-md shadow-sm">
+                            </div>
+                    </div>
+                    <button onclick="analyzeSoil()" class="w-full btn-primary font-bold py-3 px-4 rounded-md mt-4">تحليل سريع للتربة</button>
+                </div>
+            </div>
+
+            <!-- Products Page -->
+            <div id="products" class="page">
+                <button onclick="showPage('home')" class="btn-primary font-bold py-2 px-4 rounded-md mb-4 flex items-center justify-center">
+                    <i class="fas fa-arrow-right ml-2"></i> العودة للرئيسية
+                </button>
+                <h2 class="text-lg font-semibold mb-4 text-gray-800">منتجاتنا الزراعية</h2>
+                
+                <!-- LLM Product Recommendation Feature -->
+                <div class="card mb-6 p-4 bg-purple-50 text-center border-purple-200">
+                    <h3 class="font-semibold text-purple-800 mb-3 flex items-center justify-center">
+                        <i class="fas fa-magic ml-2"></i> توصية المنتج الذكية ✨
+                    </h3>
+                    <p class="text-sm text-gray-700 mb-3">ابحث عن أفضل منتج لدينا حسب المشكلة أو الاحتياج:</p>
+                    <input type="text" id="product-symptom-input" placeholder="مثال: دودة القطن، أو نقص نيتروجين، أو تعفن الجذور" class="w-full p-2 border border-purple-300 rounded-md mb-3 focus:ring-purple-500 focus:border-purple-500">
+                    <button onclick="recommendProductBySymptom()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-md flex items-center justify-center text-base">
+                        <i class="fas fa-search ml-2"></i> ابحث عن الحل
+                    </button>
+                </div>
+
+                <!-- Custom Product Request Button -->
+                <div class="card mb-6 p-4 bg-green-50 text-center border-green-200">
+                    <p class="font-semibold text-green-800 mb-3">هل تبحث عن منتج معين غير موجود في القائمة؟</p>
+                    <a href="https://wa.me/9647509774788?text=مرحباً، أود الاستفسار عن منتج زراعي مخصص غير موجود في قائمة المنتجات لديكم." 
+                        class="w-full btn-primary font-bold py-3 px-4 rounded-md flex items-center justify-center text-base">
+                        <i class="fab fa-whatsapp ml-2"></i> لطلب منتج مخصص اضغط هنا
+                    </a>
+                </div>
+
+                <div id="all-products-list" class="space-y-4">
+                    <!-- Products will be dynamically loaded here -->
+                </div>
+
+                <!-- Disclaimer from Qusay Khader - Moved Here -->
+                <div class="bg-yellow-50 border-t border-b border-yellow-200 text-yellow-800 p-3 text-center text-sm mt-4 mx-4 rounded-lg shadow-sm">
+                    <p class="font-semibold mb-1">محبكم قصي خضر</p>
+                    <p>على الإخوة المزارعين الالتزام بفترة الأمان حفاظًا على أنفسكم أولاً وأنفسنا، جميع المبيدات تحتوي على مواد مسرطنة.</p>
+                    <p class="mt-1">تم إنشاء هذا التطبيق للخدمة العامة، ليس للاستفادة الشخصية.</p>
+                </div>
+            </div>
+
+            <!-- General Notes/Guidance Page (Replaced Rewards) -->
+            <div id="general-notes" class="page">
+                    <button onclick="showPage('home')" class="btn-primary font-bold py-2 px-4 rounded-md mb-4 flex items-center justify-center">
+                        <i class="fas fa-arrow-right ml-2"></i> العودة للرئيسية
+                    </button>
+                    <h2 class="text-lg font-semibold mb-4 text-gray-800 flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-600 ml-2"></i> إرشادات وملاحظات هامة
+                    </h2>
+                    <div class="card text-center bg-red-50 border-red-200">
+                        <i class="fas fa-biohazard fa-3x text-red-500 mb-3"></i>
+                        <h3 class="font-bold text-xl text-red-800">السلامة أولاً: فترة الأمان</h3>
+                        <p class="text-sm text-gray-700 mt-2">
+                            يجب الالتزام الصارم بفترة الأمان (Pre-Harvest Interval - PHI) لأي مبيد زراعي. هذه الفترة هي الفاصل الزمني بين آخر رش للمبيد وحصاد المحصول، وهي ضرورية لضمان تحلل المادة السامة إلى مستويات آمنة وغير ضارة للاستهلاك الآدمي.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h3 class="font-semibold mb-3 flex items-center text-green-700">
+                            <i class="fas fa-flask ml-2"></i> نصائح عامة للعمل بالمبيدات
+                        </h3>
+                        <ul class="space-y-2 text-gray-700 text-sm list-disc list-inside">
+                            <li>**ملابس واقية:** يجب ارتداء ملابس واقية، قفازات، نظارات، وكمامة عند خلط أو رش أي مبيد.</li>
+                            <li>**التخزين:** تخزين المبيدات في مكان آمن، بعيداً عن متناول الأطفال والحيوانات، وبعيداً عن المواد الغذائية.</li>
+                            <li>**الخلط:** اتبع التعليمات بدقة. لا تخلط مبيدات بشكل عشوائي لتجنب التفاعلات الكيميائية الضارة.</li>
+                            <li>**التخلص الآمن:** تخلص من العبوات الفارغة بالطريقة الصحيحة ولا تستخدمها لأغراض أخرى.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3 class="font-semibold mb-3 flex items-center text-blue-700">
+                            <i class="fas fa-lightbulb ml-2"></i> نصائح حول الأسمدة
+                        </h3>
+                        <ul class="space-y-2 text-gray-700 text-sm list-disc list-inside">
+                            <li>**التوازن:** تجنب الإفراط في النيتروجين الذي يزيد من النمو الخضري على حساب الثمار، وتأكد من توفير البوتاسيوم في مرحلة الإثمار.</li>
+                            <li>**تحليل التربة:** يفضل إجراء تحليل للتربة سنوياً لضمان إضافة العناصر الناقصة فقط.</li>
+                        </ul>
+                    </div>
+            </div>
+            
+            <!-- Farming Guide Page -->
+            <div id="guide" class="page">
+                <button onclick="showPage('home')" class="btn-primary font-bold py-2 px-4 rounded-md mb-4 flex items-center justify-center">
+                    <i class="fas fa-arrow-right ml-2"></i> العودة للرئيسية
+                </button>
+                <h2 class="text-lg font-semibold mb-4 text-gray-800">دليل الزراعة</h2>
+                <div class="space-y-2">
+                    <details class="card p-0 overflow-hidden">
+                        <summary class="p-4 font-semibold cursor-pointer">زراعة الطماطم</summary>
+                        <div class="p-4 bg-gray-50 border-t">
+                            <p class="text-sm text-gray-700">
+                                **أفضل وقت للزراعة:** الربيع (بعد انتهاء خطر الصقيع). <br>
+                                **التربة:** تفضل التربة الخصبة جيدة الصرف، ذات حموضة ($pH$) تتراوح بين $6.0$ و $6.8$. <br>
+                                **الري:** تحتاج إلى ري منتظم ومتساوٍ، خاصة أثناء الإزهار وتكوين الثمار، مع الحفاظ على رطوبة التربة وتجنب الري الزائد أو النقص المفاجئ لتجنب تشقق الثمار. <br>
+                                **التسميد:** استخدم سماد $NPK$ متوازن في المراحل الأولى، ثم سماد عالي البوتاسيوم والفوسفور عند بدء الإزهار والإثمار لتعزيز الإنتاجية وجودة الثمار.
+                            </p>
+                        </div>
+                    </details>
+                    <details class="card p-0 overflow-hidden">
+                        <summary class="p-4 font-semibold cursor-pointer">زراعة القمح</summary>
+                        <div class="p-4 bg-gray-50 border-t">
+                                <p class="text-sm text-gray-700">
+                                    **أفضل وقت للزراعة:** الخريف (أكتوبر-نوفمبر) في معظم المناطق العربية. <br>
+                                    **التربة:** ينمو في أنواع مختلفة من التربة، لكنه يفضل التربة الطميية أو الطينية الثقيلة جيدة الصرف. <br>
+                                    **الري:** يعتمد بشكل كبير على الأمطار، وقد يحتاج ري تكميلي في مراحل النمو الحرجة مثل التفريع، طرد السنابل، وامتلاء الحبوب، خاصة في المناطق الجافة أو في سنوات الجفاف. <br>
+                                    **التسميد:** جرعة نيتروجين أساسية عند الزراعة، وجرعات إضافية عند التفريع وطرد السنابل لتعزيز النمو الخضري وتكوين الحبوب.
+                                </p>
+                        </div>
+                    </details>
+                    <details class="card p-0 overflow-hidden">
+                        <summary class="p-4 font-semibold cursor-pointer">إدارة الآفات والأمراض</summary>
+                        <div class="p-4 bg-gray-50 border-t">
+                                <p class="text-sm text-gray-700">
+                                    **المراقبة الدورية:** تفقد النباتات بانتظام (يوميًا أو أسبوعيًا) لاكتشاف أي علامات مبكرة للآفات (مثل المن، الذبابة البيضاء، الديدان) أو الأمراض (مثل البياض الدقيقي، الصدأ، اللفحة). <br>
+                                    **المكافحة المتكاملة (IPM):** استخدم مزيجًا من الطرق البيولوجية (الأعداء الطبيعية)، الكيميائية (المبيدات الآمنة والفعالة)، والزراعية (الدورة الزراعية، إزالة الحشائش) للتحكم في الآفات والأمراض. <br>
+                                    **الوقاية:** اختر أصنافًا مقاومة للأمراض، وحافظ على نظافة الحقل من بقايا النباتات والحشائش، وتجنب الري الزائد الذي يشجع نمو الفطريات، وتأكد من التهوية الجيدة للنباتات.
+                                </p>
+                        </div>
+                    </details>
+                    <details class="card p-0 overflow-hidden">
+                        <summary class="p-4 font-semibold cursor-pointer">تحضير التربة</summary>
+                        <div class="p-4 bg-gray-50 border-t">
+                                <p class="text-sm text-gray-700">
+                                    **الحراثة:** لتهوية التربة وتكسير الكتل الكبيرة، مما يسهل اختراق الجذور ونموها. <br>
+                                    **التسوية:** لضمان توزيع متساوٍ للمياه والمغذيات. <br>
+                                    **إضافة المواد العضوية:** مثل السماد العضوي أو الكمبوست، لتحسين خصوبة التربة وقدرتها على الاحتفاظ بالماء والمغذيات، وتحسين بنيتها. <br>
+                                    **فحص التربة:** يفضل إجراء تحليل للتربة قبل الزراعة لتحديد مستويات المغذيات ودرجة الحموضة، وتعديلها حسب حاجة المحصول.
+                                </p>
+                        </div>
+                    </details>
+                    <details class="card p-0 overflow-hidden">
+                        <summary class="p-4 font-semibold cursor-pointer">الري الفعال</summary>
+                        <div class="p-4 bg-gray-50 border-t">
+                                <p class="text-sm text-gray-700">
+                                    **تحديد الاحتياج المائي:** يختلف الاحتياج المائي باختلاف المحصول، مرحلة النمو، ونوع التربة والمناخ. <br>
+                                    **طرق الري الحديثة:** استخدم أنظمة الري بالتنقيط أو الرش لتقليل هدر المياه وزيادة كفاءة الري. <br>
+                                    **توقيت الري:** يفضل الري في الصباح الباكر أو في المساء لتقليل التبخر. <br>
+                                    **تجنب الإفراط أو النقص:** الري الزائد يؤدي إلى تعفن الجذور ونقص الأكسجين، بينما النقص يؤثر على نمو النبات وإنتاجيته.
+                                </p>
+                        </div>
+                    </details>
+                    <details class="card p-0 overflow-hidden">
+                        <summary class="p-4 font-semibold cursor-pointer">التسميد الأمثل</summary>
+                        <div class="p-4 bg-gray-50 border-t">
+                                <p class="text-sm text-gray-700">
+                                    **التسميد المتوازن:** توفير العناصر الكبرى ($N, P, K$) والصغرى (حديد، زنك، بورون، إلخ) بالنسب الصحيحة. <br>
+                                    **التسميد الورقي:** طريقة سريعة لتوصيل المغذيات للنباتات عبر الأوراق، مفيدة في حالات النقص السريع. <br>
+                                    **التسميد العضوي:** استخدام الأسمدة العضوية لتحسين خصوبة التربة على المدى الطويل وتعزيز النشاط الميكروبي. <br>
+                                    **التسميد حسب المرحلة:** تختلف احتياجات النباتات للمغذيات باختلاف مراحل النمو (النمو الخضري، التزهير، الإثمار).
+                                </p>
+                        </div>
+                    </details>
+                    <details class="card p-0 overflow-hidden">
+                        <summary class="p-4 font-semibold cursor-pointer">اختيار البذور والأصناف</summary>
+                        <div class="p-4 bg-gray-50 border-t">
+                                <p class="text-sm text-gray-700">
+                                    **أصناف مقاومة:** اختر بذوراً أو شتلات من أصناف مقاومة للأمراض والآفات الشائعة في منطقتك. <br>
+                                    **ملائمة المناخ:** تأكد أن الصنف المختار يتناسب مع الظروف المناخية والتربة في مزرعتك. <br>
+                                    **جودة البذور:** استخدم بذوراً عالية الجودة من مصادر موثوقة لضمان نسبة إنبات عالية ونباتات قوية.
+                                </p>
+                        </div>
+                    </details>
+                    <details class="card p-0 overflow-hidden">
+                        <summary class="p-4 font-semibold cursor-pointer">التقليم الصحيح</summary>
+                        <div class="p-4 bg-gray-50 border-t">
+                                <p class="text-sm text-gray-700">
+                                    **أهداف التقليم:** تحسين شكل النبات، زيادة الإنتاجية، إزالة الأغصان الميتة أو المريضة، وتحسين تهوية النبات. <br>
+                                    **أدوات التقليم:** استخدم أدوات تقليم نظيفة وحادة لمنع انتشار الأمراض. <br>
+                                    **توقيت التقليم:** يختلف حسب نوع النبات، لكن بشكل عام يتم بعد الحصاد أو خلال فترة السكون.
+                                </p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <!-- Best Crop Selection Page (Iraq Focus & Companion Planting) -->
+            <div id="best-crop" class="page">
+                <button onclick="showPage('home')" class="btn-primary font-bold py-2 px-4 rounded-md mb-4 flex items-center justify-center">
+                    <i class="fas fa-arrow-right ml-2"></i> العودة للرئيسية
+                </button>
+                <h2 class="text-lg font-semibold mb-4 text-gray-800">تحديد أفضل محصول ومحصول مرافق</h2>
+                <div class="card">
+                    <h3 class="font-semibold mb-3 flex items-center">
+                        <i class="fas fa-map-marker-alt ml-2 text-green-600"></i> بيانات الموقع والتربة
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label for="country" class="block mb-1 font-medium text-gray-700">البلد:</label>
+                            <input type="text" id="country" value="العراق" readonly class="w-full p-2 border rounded-md bg-gray-100 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label for="governorate" class="block mb-1 font-medium text-gray-700">المحافظة (إجباري):</label>
+                            <select id="governorate" class="w-full p-2 border rounded-md focus:ring-green-500 focus:border-green-500">
+                                <option value="">--- اختر محافظة عراقية ---</option>
+                                <option value="Baghdad">بغداد</option>
+                                <option value="Nineveh">نينوى (الموصل)</option>
+                                <option value="Basra">البصرة</option>
+                                <option value="Diyala">ديالى</option>
+                                <option value="Babil">بابل</option>
+                                <option value="Najaf">النجف</option>
+                                <option value="Karbala">كربلاء</option>
+                                <option value="Wasit">واسط</option>
+                                <option value="Maysan">ميسان</option>
+                                <option value="Dhi Qar">ذي قار</option>
+                                <option value="Muthanna">المثنى</option>
+                                <option value="Qadisiyyah">القادسية</option>
+                                <option value="Anbar">الأنبار</option>
+                                <option value="Salah ad Din">صلاح الدين</option>
+                                <option value="Kirkuk">كركوك</option>
+                                <option value="Erbil">أربيل</option>
+                                <option value="Sulaymaniyah">السليمانية</option>
+                                <option value="Dahuk">دهوك</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="center" class="block mb-1 font-medium text-gray-700">المركز/المنطقة (اختياري):</label>
+                            <input type="text" id="center" placeholder="مثال: أبو الخصيب" class="w-full p-2 border rounded-md focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label for="soil-type" class="block mb-1 font-medium text-gray-700">نوع التربة:</label>
+                            <select id="soil-type" class="w-full p-2 border rounded-md focus:ring-green-500 focus:border-green-500">
+                                <option value="sandy">رملية</option>
+                                <option value="clay">طينية</option>
+                                <option value="loamy">طميية</option>
+                                <option value="silty">غرينية</option>
+                                <option value="peaty">خثية</option>
+                                <option value="chalky">جيرية</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="climate" class="block mb-1 font-medium text-gray-700">المناخ السائد (عادة حار/جاف):</label>
+                            <select id="climate" class="w-full p-2 border rounded-md focus:ring-green-500 focus:border-green-500">
+                                <option value="hot-dry">حار وجاف (صحراوي)</option>
+                                <option value="temperate">معتدل</option>
+                                <option value="arid">قاحل</option>
+                                <option value="mediterranean">متوسطي</option>
+                                <option value="subtropical">شبه استوائي</option>
+                                <option value="tropical">استوائي</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="water-availability" class="block mb-1 font-medium text-gray-700">توفر المياه:</label>
+                            <select id="water-availability" class="w-full p-2 border rounded-md focus:ring-green-500 focus:border-green-500">
+                                <option value="high">عالي (ري متوفر)</option>
+                                <option value="medium">متوسط (ري محدود)</option>
+                                <option value="low">منخفض (يعتمد على الأمطار/بعلي)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="market-demand" class="block mb-1 font-medium text-gray-700">الطلب في السوق المحلي:</label>
+                            <select id="market-demand" class="w-full p-2 border rounded-md focus:ring-green-500 focus:border-green-500">
+                                <option value="high">عالي جداً</option>
+                                <option value="medium">متوسط</option>
+                                <option value="low">منخفض</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <h3 class="font-semibold mb-3 mt-6 flex items-center">
+                        <i class="fas fa-hand-holding-heart ml-2 text-blue-600"></i> المحاصيل المرافقة للحماية
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label for="main-crop" class="block mb-1 font-medium text-gray-700">محصولك الرئيسي الذي تريد حمايته:</label>
+                            <select id="main-crop" class="w-full p-2 border rounded-md focus:ring-green-500 focus:border-green-500">
+                                <option value="">--- لا يوجد / أريد توصية عامة ---</option>
+                                <option value="الطماطم">الطماطم</option>
+                                <option value="الخيار">الخيار</option>
+                                <option value="الباذنجان">الباذنجان</option>
+                                <option value="البطيخ">البطيخ</option>
+                                <option value="الذرة">الذرة</option>
+                                <option value="القمح">القمح</option>
+                                <option value="البصل">البصل</option>
+                                <option value="الفراولة">الفراولة</option>
+                                <option value="الفلفل">الفلفل</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="analyzeBestCrop()" class="w-full btn-primary font-bold py-3 px-4 rounded-md mt-4">تحديد أفضل المحاصيل</button>
+                </div>
+            </div>
+
+            <!-- Arab Crops Page -->
+            <div id="arab-crops" class="page">
+                <button onclick="showPage('home')" class="btn-primary font-bold py-2 px-4 rounded-md mb-4 flex items-center justify-center">
+                    <i class="fas fa-arrow-right ml-2"></i> العودة للرئيسية
+                </button>
+                <h2 class="text-lg font-semibold mb-4 text-gray-800">محاصيل شائعة في الوطن العربي</h2>
+                <div id="arab-crops-content" class="space-y-4">
+                    <!-- Content will be generated by JS -->
+                </div>
+            </div>
+
+            <!-- Al-Awad Office Page -->
+            <div id="alawad-office" class="page">
+                <button onclick="showPage('home')" class="btn-primary font-bold py-2 px-4 rounded-md mb-4 flex items-center justify-center">
+                    <i class="fas fa-arrow-right ml-2"></i> العودة للرئيسية
+                </button>
+                <h2 class="text-lg font-semibold mb-4 text-gray-800">مكاتب العواد</h2>
+                <div class="card">
+                    <h3 class="font-bold text-lg mb-2 text-green-700">مكتب العواد الرئيسي</h3>
+                    <p class="text-gray-700 mb-2">
+                        <i class="fas fa-map-marker-alt text-green-600"></i> العنوان: قرية موشة/ الشارع العام /مقابل مفرق تل وردان
+                    </p>
+                    <p class="text-gray-700">
+                        <i class="fas fa-phone text-green-600"></i> تواصل: <br>
+                        <a href="tel:07716402240" class="text-blue-600 hover:underline">07716402240</a> (ابو عواد)<br>
+                        <a href="tel:07502268768" class="text-blue-600 hover:underline">07502268768</a> (ابو عواد)<br>
+                        <a href="tel:07508867765" class="text-blue-600 hover:underline">07508867765</a> (عبدالباسط)
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 class="font-bold text-lg mb-2 text-green-700">مكتب العواد 2</h3>
+                    <p class="text-gray-700 mb-2">
+                        <i class="fas fa-map-marker-alt text-green-600"></i> العنوان: قرية المثلثة /الشارع العام /بالقرب من جامع السوق
+                    </p>
+                    <p class="text-gray-700">
+                        <i class="fas fa-phone text-green-600"></i> تواصل: <br>
+                        <a href="tel:07508867765" class="text-blue-600 hover:underline">07508867765</a> (عبدالباسط)<br>
+                        <!-- Removed Saif's number (07511500293) as requested -->
+                        <a href="tel:07509774788" class="text-blue-600 hover:underline">07509774788</a> (قصي)
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 class="font-bold text-lg mb-2 text-green-700">مكتب العواد 3</h3>
+                    <p class="text-gray-700 mb-2">
+                        <i class="fas fa-map-marker-alt text-green-600"></i> العنوان: قرية البزونة / الشارع العام / بالقرب من لجامع الاخضر
+                    </p>
+                    <p class="text-gray-700">
+                        <i class="fas fa-phone text-green-600"></i> تواصل: <br>
+                        <a href="tel:07518541913" class="text-blue-600 hover:underline">07518541913</a> (صالح السلوم)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Farmers Forum Page -->
+            <div id="forum" class="page">
+                <button onclick="showPage('home')" class="btn-primary font-bold py-2 px-4 rounded-md mb-4 flex items-center justify-center">
+                    <i class="fas fa-arrow-right ml-2"></i> العودة للرئيسية
+                </button>
+                <h2 class="text-lg font-semibold mb-4 text-gray-800 flex items-center">
+                    <i class="fas fa-users text-purple-600 ml-2"></i> منتدى المزارعين (سؤال وجواب)
+                </h2>
+                <p class="text-sm text-gray-600 mb-4">اطلع على استفسارات المزارعين و إجابات الخبراء لتستفيد من تجارب الآخرين. **(بيانات هذا القسم تعمل بالكامل بدون إنترنت)**</p>
+                
+                <div id="forum-content" class="space-y-4">
+                    <!-- Forum posts will be dynamically loaded here -->
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Floating Action Buttons -->
+        <div class="fab-container">
+            <a href="https://wa.me/9647509774788?text=مرحباً، أود الاستفسار عن خدمة عامة." class="fab-button whatsapp">
+                <i class="fab fa-whatsapp"></i>
+            </a>
+            <div onclick="showAssistantModal()" class="fab-button assistant">
+                <i class="fas fa-robot"></i>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation Bar (Updated) -->
+        <nav class="bg-white shadow-lg fixed bottom-0 w-full max-w-[420px] flex justify-around p-2 border-t">
+            <div onclick="showPage('home')" class="nav-item active flex-1 text-center">
+                <i class="fas fa-home"></i>
+                <span class="block text-xs">الرئيسية</span>
+            </div>
+            <div onclick="showPage('diagnose')" class="nav-item flex-1 text-center">
+                <i class="fas fa-leaf"></i>
+                <span class="block text-xs">تشخيص</span>
+            </div>
+            <div onclick="showPage('products')" class="nav-item flex-1 text-center">
+                <i class="fas fa-shopping-basket"></i>
+                <span class="block text-xs">منتجاتنا</span>
+            </div>
+            <div onclick="showPage('general-notes')" class="nav-item flex-1 text-center">
+                <i class="fas fa-clipboard-list"></i>
+                <span class="block text-xs">إرشادات</span>
+            </div>
+            <div onclick="showPage('forum')" class="nav-item flex-1 text-center">
+                <i class="fas fa-users"></i>
+                <span class="block text-xs">المنتدى</span>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Modal for showing results (used for AI results and OFFLINE errors) -->
+    <div id="result-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <!-- Close button - visibility controlled by JS -->
+            <button onclick="closeModal('result-modal')" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl font-bold">
+                &times;
+            </button>
+            <div id="modal-loader" class="hidden">
+                <i class="fas fa-spinner fa-spin fa-3x text-green-500"></i>
+                <p class="mt-4 font-semibold">جاري التحليل...</p>
+            </div>
+            <div id="modal-result">
+                <h3 id="modal-title" class="text-lg font-bold mb-2"></h3>
+                <p id="modal-body" class="text-gray-600"></p>
+                <button onclick="closeModal('result-modal')" class="mt-6 btn-primary font-bold py-2 px-6 rounded-md">حسنًا</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Assistant Modal -->
+    <div id="assistant-modal" class="modal-backdrop hidden">
+        <div class="modal-content chat-modal">
+            <button onclick="closeModal('assistant-modal')" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl font-bold">
+                &times;
+            </button>
+            <h3 class="text-lg font-bold mb-4 text-gray-800 text-center">المساعد الذكي</h3>
+            <div id="chat-window" class="flex-grow bg-gray-50 p-4 rounded-lg overflow-y-auto mb-4">
+                <!-- Chat messages will be appended here -->
+                <div class="chat-bubble received mb-2">
+                    <p class="bg-gray-200 text-gray-800 rounded-lg py-2 px-4 inline-block">مرحباً بك في دعم العواد الزراعي! أنا "مزارعك الآلي". كيف يمكنني مساعدتك اليوم؟</p>
+                </div>
+            </div>
+            <div class="flex items-center">
+                <input type="text" id="chat-input" class="flex-grow p-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="اكتب رسالتك هنا...">
+                <button onclick="sendChatMessage()" class="btn-primary px-4 py-2 rounded-l-md font-bold flex-shrink-0">إرسال</button>
+            </div>
+            <div id="assistant-loading" class="hidden text-center mt-2 text-green-600">
+                <i class="fas fa-spinner fa-spin"></i> جاري الكتابة...
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // Store chat history for the AI assistant
+        let chatHistory = [{ role: "user", parts: [{ text: "أنا أستخدم تطبيق العواد للزراعة الذكية. أنا مزارع وأرغب في الحصول على نصائح زراعية. اجبني دائما باللغة العربية الفصحى وكن خبيرا زراعيا متخصصا في الزراعة بالوطن العربي." }] }];
+        
+        // Product data structure (consolidated)
+        const productsDatabase = [
+            // المبيدات الحشرية والعناكب (Insecticides and Acaricides)
+            { name: 'سوبر كورين', category: 'المبيدات الحشرية والعناكب', description: 'مبيد عناكبي حشري غير جهازي يقضي على جميع أطوار العناكب والدوود.', imageUrl: 'https://iili.io/Flqr5mv.th.jpg' },
+            { name: 'سبيد', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري وعناكبي.', imageUrl: 'https://iili.io/Flq6Wx4.th.jpg' },
+            { name: 'كلايزر', category: 'المبيدات الحشرية والعناكب', description: 'مبيد عناكبي وحشري متكامل وفعال على جميع مراحل العناكب.', imageUrl: 'https://iili.io/FlqPXpa.th.jpg' },
+            { name: 'درايفر مكتين', category: 'المبيدات الحشرية والعناكب', description: 'مبيد عناكبي وحشري مستحلب، صنع في الهند.', imageUrl: 'https://iili.io/FlqsJHX.th.jpg' },
+            { name: 'هالك', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري عناكبي مركز ومستحلب .', imageUrl: 'https://iili.io/FlqLVY7.th.jpg' },
+            { name: 'كلاش', category: 'المبيدات الحشرية والعناكب', description: 'مبيد عناكبي بفاعلية عالية.', imageUrl: 'https://iili.io/FlqQSVf.th.jpg' },
+            { name: 'سنتر', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري عناكبي .', imageUrl: 'https://iili.io/FlqtWvI.th.jpg' },
+            { name: 'زووم', category: 'المبيدات الحشرية والعناكب', description: 'مبيد عناكبي حشري مركز ومستحلب .', imageUrl: 'https://iili.io/FlqbI5B.th.jpg' },
+            { name: 'مايتوكس', category: 'المبيدات الحشرية والعناكب', description: 'مبيد عناكبي مستحلب يكافح جميع أطوار العناكب.', imageUrl: 'https://iili.io/FlqbZ7V.th.jpg' },
+            { name: 'لامبدافوس', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري فوسفوري وبايثرودي، يعمل بالملامسة وعبر الجهاز التنفسي.', imageUrl: 'https://iili.io/FlqmryN.th.jpg' },
+            { name: 'دروون', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري.', imageUrl: 'https://iili.io/FlBHViF.th.jpg' },
+            { name: 'ازيرا', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري وعناكبي جهازي، لإبادة ديدان القطن والبطاطس والطماطم.', imageUrl: 'https://iili.io/FlBJhL7.th.jpg' },
+            { name: 'سوبر كراتي', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري بيروثرويدي غير جهازي، يعمل بالملامسة والجهاز الهضمي.', imageUrl: 'https://iili.io/FlB2jUu.th.jpg' },
+            { name: 'صاعق', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري عناكبي بفاعلية مزدوجة .', imageUrl: 'https://iili.io/FlBFv6P.th.jpg' },
+            { name: 'ميامي', category: 'المبيدات الحشرية والعناكب', description: 'مبيد عناكبي وحشري فعال للخضروات والأشجار والفواكه ونباتات الزينة .', imageUrl: 'https://iili.io/FlBClrN.th.jpg' },
+            { name: 'فابكوميك', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري عناكبي مركز قابل للاستحلاب .', imageUrl: 'https://iili.io/FlBfrhv.th.jpg' },
+            { name: 'فلورمايت', category: 'المبيدات الحشرية والعناكب', description: 'مبيد عناكبي حشري غير جهازي يقضي على جميع أطوار العناكب والدود.', imageUrl: 'https://iili.io/FlBnwwg.th.jpg' },
+            { name: 'تكنو ستار', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري وعناكبي جهازي.', imageUrl: 'https://iili.io/FlBojg2.th.jpg' },
+            { name: 'هيكسوس', category: 'المبيدات الحشرية والعناكب', description: 'مركب فعال على جميع مراحل العناكب .', imageUrl: 'https://iili.io/FlBxtvS.th.jpg' },
+            { name: 'ميراج 10', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري واسع الطيف يعمل بالملامسة والجهاز الهضمي.', imageUrl: 'https://iili.io/FlBzyHN.th.jpg' },
+            { name: 'ايكون 10%', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري واسع الطيف على شكل بودرة .', imageUrl: 'https://iili.io/FlBTmuI.th.jpg' },
+            { name: 'ميلاثيون 50% WP', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري وعناكبي عام.', imageUrl: 'https://iili.io/FlBAJDP.th.jpg' },
+            { name: 'رينيو 5%SC', category: 'المبيدات الحشرية والعناكب', description: 'مبيد حشري.', imageUrl: 'https://iili.io/FlBANdx.th.jpg' },
+            { name: 'مبيد حشري جهازي (للمن والذبابة البيضاء)', category: 'المبيدات الحشرية والعناكب', description: 'فعال ضد الحشرات الثاقبة الماصة مثل المن والذبابة البيضاء، ينتقل داخل النبات ليحميه بالكامل.', imageUrl: '' },
+            { name: 'مبيد حشري بالملامسة (للدودة القارضة)', category: 'المبيدات الحشرية والعناكب', description: 'يعمل بالملامسة أو عن طريق الجهاز الهضمي للحشرات، مثالي لمكافحة الديدان القارضة ويرقات الفراشات.', imageUrl: '' },
+            { name: 'مبيد حشري حيوي (ليرقات الفراشات)', category: 'المبيدات الحشرية والعناكب', description: 'مبيد عضوي آمن وصديق للبيئة، يستهدف يرقات الفراشات والعث دون الإضرار بالكائنات الحية النافعة.', imageUrl: '' },
+            { name: 'مبيد حشري جهازي و بالملامسة (للحشرات الثاقبة الماصة)', category: 'المبيدات الحشرية والعناكب', description: 'تركيبة مزدوجة توفر حماية فورية وطويلة الأمد ضد مجموعة واسعة من الحشرات الماصة.', imageUrl: '' },
+            { name: 'مبيد حشري بالتبخير (للآفات المخزنية)', category: 'المبيدات الحشرية والعناكب', description: 'يستخدم لمكافحة الآفات في المخازن والحبوب، فعال ضد السوس والخنافس.', imageUrl: '' },
+            { name: 'مبيد حشري حبيبي (لآفات التربة)', category: 'المبيدات الحشرية والعناكب', description: 'يستخدم لمكافحة الآفات التي تعيش في التربة مثل الديدان القارضة وديدان الجذور.', imageUrl: '' },
+            { name: 'مبيد عناكبي متخصص (للعنكبوت الأحمر)', category: 'المبيدات الحشرية والعناكب', description: 'مبيد فعال للغاية ضد العنكبوت الأحمر وجميع أطواره، يقضي على الإصابة بسرعة.', imageUrl: '' },
+            { name: 'مبيد عناكبي وقائي وعلاجي (لجميع أنواع العناكب)', category: 'المبيدات الحشرية والعناكب', description: 'يوفر حماية شاملة للنباتات من مختلف أنواع العناكب، ويعالج الإصابات القائمة بفعالية.', imageUrl: '' },
+            { name: 'مبيد عناكبي عضوي (آمن للنحل)', category: 'المبيدات الحشرية والعناكب', description: 'تركيبة طبيعية آمنة للاستخدام في الزراعة العضوية، لا تضر بالحشرات النافعة مثل النحل.', imageUrl: '' },
+            { name: 'مبيد عناكبي بيولوجي (للسيطرة طويلة الأمد)', category: 'المبيدات الحشرية والعناكب', description: 'يعتمد على كائنات دقيقة لمكافحة العناكب، يوفر سيطرة بيولوجية مستدامة.', imageUrl: '' },
+            { name: 'مبيد عناكبي جهازي (للعناكب الكامنة)', category: 'المبيدات الحشرية والعناكب', description: 'يخترق النبات ليقضي على العناكب التي تختبئ في الأماكن الصعبة.', imageUrl: '' },
+            { name: 'مبيد قوارض حبيبي (للفئران والجرذان في الحقول)', category: 'المبيدات الحشرية والعناكب', description: 'طعم جاذب وفعال للقضاء على الفئران والجرذان التي تسبب أضراراً للمحاصيل.', imageUrl: '' },
+            { name: 'مبيد قوارض سائل (للاستخدام في الأماكن المغلقة)', category: 'المبيدات الحشرية والعناكب', description: 'تركيبة سائلة سريعة المفعول، مناسبة للاستخدام في المستودعات والمباني الزراعية.', imageUrl: '' },
+
+
+            // مبيدات فطرية (Fungicides)
+            { name: 'ديفكور', category: 'مبيدات فطرية', description: 'المادة الفعالة: Difenoconazole 250 EC. التفاصيل: مبيد فطري جهازي ووقائي وعلاجي.', imageUrl: 'https://iili.io/FloyTXV.md.jpg' },
+            { name: 'هاينكس', category: 'مبيدات فطرية', description: 'المادة الفعالة: Hexaconazole 5% SC. التفاصيل: مبيد فطري جهازي (Systemic Fungicide). صنع في الهند.', imageUrl: 'https://iili.io/Flx9D9s.md.jpg' },
+            { name: 'سويفت', category: 'مبيدات فطرية', description: 'المادة الفعالة: Carbendazim 50%. التفاصيل: مبيد فطري جهازي ووقائي وعلاجي وواسع المدى مركز معلق.', imageUrl: 'https://iili.io/FlxJWBV.md.jpg' },
+            { name: 'توباسين', category: 'مبيدات فطرية', description: 'المادة الفعالة: Thiophanate-Methyl 70%. التفاصيل: مبيد فطري جهازي ووقائي وعلاجي يمتص عن طريق الأوراق والجذور، يستعمل لمكافحة عدد كبير من الأمراض الفطرية.', imageUrl: 'https://iili.io/Flx2VUP.md.jpg' },
+            { name: 'افيكور', category: 'مبيدات فطرية', description: 'المادة الفعالة: Propamocarb Hydrochloride 72.2%. التفاصيل: مبيد فطري جهازي لمكافحة الأمراض التي تسببها الفطريات البيضية وخاصة ذبول البادرات مثل البيثيوم والفايتوفثورا في المشاتل، ويكافح اللفحة المتأخرة والبياض الزغبي في محاصيل الخضروات ونباتات الزينة.', imageUrl: 'https://iili.io/FlxKxWJ.md.jpg' },
+            { name: 'ميتا كارب', category: 'مبيدات فطرية', description: 'المادة الفعالة: Metalaxyl + Propamocarb Hydrochloride. التفاصيل: مبيد فطري جهازي ووقائي وعلاجي واسع الطيف ضد العديد من الأمراض الفطرية التي تصيب الخضار المختلفة والأشجار المثمرة والخس والبصل.', imageUrl: 'https://iili.io/FlxqSHB.md.jpg' },
+            { name: 'رادوكسيل', category: 'مبيدات فطرية', description: 'المادة الفعالة: Metalaxyl 8% + Mancozeb 64%. التفاصيل: مبيد فطري جهازي ووقائي وعلاجي بودرة قابلة للبلل. يتكون من مادتين فعاليتين لمكافحة اللفحة المبكرة واللفحة المتأخرة والبياض الزغبي في المحاصيل البندورة والبطاطا والبقوليات والأنثراكنوز على القرعيات.', imageUrl: 'https://iili.io/FlxnKw7.md.jpg' },
+            { name: 'جويت حب', category: 'مبيدات فطرية', description: 'المادة الفعالة: Tebuconazole. التفاصيل: دواء بذور جاف (Kuru Tohum Ilaci (DS))، مبيد فطري (Fungisit (Mantar Ilaci)).', imageUrl: 'https://iili.io/Flxx3Q9.md.jpg' },
+            { name: 'زوكس ستار', category: 'مبيدات فطرية', description: 'المادة الفعالة: Azoxystrobin 200 G/L + Difenoconazole 125 G/L. التفاصيل: مبيد فطري جهازي ويعمل عن طريق الملامسة أيضاً للقضاء على طيف واسع من الأمراض الفطرية ويتكون من مادتين فعاليتين له قدرة عالية في مكافحة العديد من الأمراض الفطرية.', imageUrl: 'https://iili.io/FlxIFUb.md.jpg' },
+            { name: 'مبيد فطري جهازي (للبياض الدقيقي)', category: 'مبيدات فطرية', description: 'يخترق أنسجة النبات ليحميه من الداخل ضد البياض الدقيقي وأمراض الفطريات الأخرى.', imageUrl: '' },
+            { name: 'مبيد فطري وقائي علاجي (للفحة المتأخرة)', category: 'مبيدات فطرية', description: 'يستخدم للوقاية والعلاج من اللفحة المتأخرة واللفحة المبكرة في البطاطس والطماطم.', imageUrl: '' },
+            { name: 'مبيد فطري نحاسي (لأمراض البكتيريا والفطريات)', category: 'مبيدات فطرية', description: 'يحتوي على النحاس كمادة فعالة، يستخدم لمكافحة العديد من الأمراض البكتيرية والفطرية.', imageUrl: '' },
+            { name: 'مبيد فطري حيوي (لمكافحة تعفن الجذور)', category: 'مبيدات فطرية', description: 'مبيد بيولوجي يعتمد على الكائنات الدقيقة المفيدة لحماية الجذور من أمراض التعفن.', imageUrl: '' },
+            { name: 'مبيد فطري جهازي (لصدأ القمح)', category: 'مبيدات فطرية', description: 'متخصص في مكافحة أمراض الصدأ التي تصيب محاصيل الحبوب مثل القمح والشعير.', imageUrl: '' },
+            { name: 'مبيد فطري وقائي (للبياض الزغبي)', category: 'مبيدات فطرية', description: 'يوفر حماية فعالة ضد البياض الزغبي في الخضروات وأشجار الفاكهة.', imageUrl: '' },
+
+            // مبيدات أعشاب (Herbicides)
+            { name: 'مبيدات أعشاب لجميع المحاصيل', category: 'مبيدات أعشاب', description: 'مبيدات أعشاب فعالة لمكافحة الحشائش في محاصيل القمح، الشعير، البصل، البطاطا، وغيرها.', imageUrl: 'https://iili.io/FlBfJdF.md.jpg' },
+            { name: 'مبيد أعشاب اختياري (للحشائش عريضة الأوراق في القمح)', category: 'مبيدات أعشاب', description: 'يستهدف الحشائش عريضة الأوراق دون التأثير على محصول القمح، مما يضمن محصولاً نظيفاً.', imageUrl: '' },
+            { name: 'مبيد أعشاب جهازي عام (للحشائش النجيلية والعريضة)', category: 'مبيدات أعشاب', description: 'يقضي على جميع أنواع الحشائش النجيلية وعريضة الأوراق، يستخدم قبل الزراعة أو بين الصفوف.', imageUrl: '' },
+            { name: 'مبيد أعشاب وقائي (لمكافحة الحشائش قبل الإنبات)', category: 'مبيدات أعشاب', description: 'يستخدم قبل إنبات الحشائش لمنع ظهورها، ويوفر حماية طويلة الأمد.', imageUrl: '' },
+            { name: 'مبيد أعشاب اختياري (للحشائش في الذرة)', category: 'مبيدات أعشاب', description: 'متخصص في مكافحة الحشائش في حقول الذرة دون الإضرار بالمحصول.', imageUrl: '' },
+
+            // الأسمدة (Fertilizers)
+            { name: 'ياباني داب', category: 'الأسمدة', description: 'سماد ياباني DAP.', imageUrl: 'https://iili.io/FlxmXX2.md.jpg' },
+            { name: 'اردني داب', category: 'الأسمدة', description: 'سماد أردني DAP.', imageUrl: 'https://iili.io/Flxppyb.md.jpg' },
+            { name: 'تونسي داب', category: 'الأسمدة', description: 'سماد تونسي DAP.', imageUrl: 'https://iili.io/Flz9c0P.md.jpg' },
+            { name: 'روسي متعادل', category: 'الأسمدة', description: 'سماد روسي متعادل NPK.', imageUrl: 'https://iili.io/FlqjFrQ.md.jpg' },
+            { name: 'متعادل', category: 'الأسمدة', description: 'سماد NPK متعادل.', imageUrl: 'https://iili.io/FlzjgAx.md.jpg' },
+            { name: 'سماد يوريا', category: 'الأسمدة', description: 'سماد يوريا عالي النيتروجين.', imageUrl: 'https://iili.io/FlzwQX2.md.jpg' },
+            { name: 'كبريت زراعي', category: 'الأسمدة', description: 'كبريت زراعي لتحسين التربة ومكافحة بعض الفطريات.', imageUrl: 'https://iili.io/Flze4dF.jpg' },
+            { name: 'ماغنوم الترا سول 18-44-00', category: 'الأسمدة', description: 'سماد عالي الفوسفور.', imageUrl: 'https://iili.io/Flz8V0N.md.jpg' },
+            { name: 'هيفي بوتاسيوم K50 + EDTA', category: 'الأسمدة', description: 'سماد سائل عالي التركيز من البوتاسيوم يحسن الثمار (5 لتر، صنع في إسبانيا).', imageUrl: 'https://iili.io/FlzUPob.md.jpg' },
+            { name: 'بيور بلص 12-12-44+TE', category: 'الأسمدة', description: 'سماد مركب عالي البوتاس من شركة روبينا.', imageUrl: 'https://iili.io/Flz6zWg.md.jpg' },
+            { name: 'سماد متوازن تركي 20-20-20+TE', category: 'الأسمدة', description: 'سماد NPK متوازن قابل للذوبان.', imageUrl: 'https://iili.io/FlziWR2.md.jpg' },
+            { name: 'سطل ماغنوم هايفيد 18-46-0+2% MgO+', category: 'الأسمدة', description: 'سماد معلق عالي الفوسفور من شركة روبينيا.', imageUrl: 'https://iili.io/FlzUPob.md.jpg' },
+            { name: 'الترا سول K Mix 13-2-44', category: 'الأسمدة', description: 'نيترات بوتاسيوم (25 كجم).', imageUrl: 'https://iili.io/FlzLVZ7.md.jpg' },
+            { name: 'ماغنوم اوربي 17-44-0', category: 'الأسمدة', description: 'سماد قابل للذوبان في الماء.', imageUrl: 'https://iili.io/FlztFQS.md.jpg' },
+            { name: 'الفا 85 H³PO⁴', category: 'الأسمدة', description: 'حمض فوسفوريك + P²o⁵ 60% يعتبر من الحوامض القوية جدا وسريع الفعالية.', imageUrl: 'https://iili.io/FlzmiFt.md.jpg' },
+            { name: 'سماد NPK 20-20-20 متوازن', category: 'الأسمدة', description: 'سماد متوازن يوفر العناصر الغذائية الكبرى (النيتروجين، الفوسفور، البوتاسيوم) لنمو صحي ومتكامل للنبات.', imageUrl: '' },
+            { name: 'سماد يوريا (نيتروجين عالي)', category: 'الأسمدة', description: 'مصدر عالي للنيتروجين، ضروري لنمو الأوراق والسيقان الخضراء وتعزيز النمو الخضري السريع.', imageUrl: '' },
+            { name: 'سماد سوبر فوسفات (فوسفور عالي)', category: 'الأسمدة', description: 'يعزز نمو الجذور والزهور وتكوين الثمار، ويزيد من مقاومة النبات للأمراض.', imageUrl: '' },
+            { name: 'سماد سلفات البوتاسيوم (بوتاسيوم عالي)', category: 'الأسمدة', description: 'يحسن جودة الثمار، ويزيد من مقاومة النبات للجفاف والصقيع، ويعزز امتصاص الماء.', imageUrl: '' },
+            { name: 'سماد نترات الأمونيوم (نيتروجين سريع المفعول)', category: 'الأسمدة', description: 'يوفر النيتروجين للنباتات بسرعة، مثالي للدفعات السمادية السريعة.', imageUrl: '' },
+            { name: 'سماد DAP (فوسفور ونيتروجين)', category: 'الأسمدة', description: 'سماد مركب يوفر الفوسفور والنيتروجين، مثالي لمراحل النمو المبكرة.', imageUrl: '' },
+            { name: 'سماد معلق عالي الفوسفور (للتزهير)', category: 'الأسمدة', description: 'تركيبة سائلة سهلة الامتصاص، مثالية لتعزيز عملية التزهير وتكوين الثمار.', imageUrl: '' },
+            { name: 'سماد معلق بوتاسيوم (لتحسين جودة الثمار)', category: 'الأسمدة', description: 'يعمل على زيادة حجم الثمار وتحسين لونها وطعمها، ويزيد من مقاومتها للتلف بعد الحصاد.', imageUrl: '' },
+            { name: 'سماد معلق كالسيوم بورون (لمنع تشقق الثمار)', category: 'الأسمدة', description: 'يمنع نقص الكالسيوم والبورون الذي يسبب تشقق الثمار وتعفن الطرف الزهري.', imageUrl: '' },
+            { name: 'سماد معلق متوازن NPK', category: 'الأسمدة', description: 'سماد سائل متوازن يوفر العناصر الغذائية الكبرى للنباتات في جميع مراحل النمو.', imageUrl: '' },
+            { name: 'سماد معلق أحماض أمينية (منشط حيوي)', category: 'الأسمدة', description: 'يعزز مقاومة النبات للإجهاد ويسرع من استعادة حيويته بعد الظروف القاسية.', imageUrl: '' },
+            { name: 'سماد كمبوست طبيعي (لتحسين بنية التربة)', category: 'الأسمدة', description: 'يحسن تهوية التربة وقدرتها على الاحتفاظ بالماء والمغذيات، ويزيد من النشاط الميكروبي.', imageUrl: '' },
+            { name: 'سماد الدود (فيرمي كومبوست) غني بالمغذيات', category: 'الأسمدة', description: 'سماد عضوي عالي الجودة غني بالإنزيمات والمغذيات الدقيقة، يعزز نمو النباتات بشكل طبيعي.', imageUrl: '' },
+            { name: 'سماد هيوميك أسيد (منشط للنمو الجذري)', category: 'الأسمدة', description: 'يعزز نمو الجذور ويحسن امتصاص النبات للمغذيات، ويزيد من مقاومة النبات للإجهاد.', imageUrl: '' },
+            { name: 'سماد سائل عضوي (للتغذية الورقية)', category: 'الأسمدة', description: 'يوفر تغذية سريعة للنباتات عبر الأوراق، مثالي لتعويض النقص السريع في المغذيات.', imageUrl: '' },
+            { name: 'سماد مستخلص الطحالب البحرية (منشط حيوي شامل)', category: 'الأسمدة', description: 'غني بالفيتامينات والهرمونات الطبيعية، يعزز النمو العام للنبات ومقاومته للأمراض.', imageUrl: '' },
+            { name: 'سماد عناصر صغرى مخلبية (حديد، زنك، منجنيز)', category: 'الأسمدة', description: 'مجموعة متكاملة من العناصر الصغرى الضرورية لعمليات التمثيل الضوئي والنمو.', imageUrl: '' },
+            { name: 'سماد بورون (لزيادة التزهير والعقد)', category: 'الأسمدة', description: 'عنصر أساسي لنجاح عملية التلقيح وتكوين الثمار، يمنع تساقط الأزهار.', imageUrl: '' },
+            { name: 'سماد ماغنيسيوم (لتعزيز اللون الأخضر)', category: 'الأسمدة', description: 'ضروري لتكوين الكلوروفيل، يحسن لون الأوراق وكفاءة التمثيل الضوئي.', imageUrl: '' },
+            { name: 'سماد كالسيوم (لتقوية جدر الخلايا)', category: 'الأسمدة', description: 'يقوي جدر الخلايا النباتية ويزيد من مقاومة النبات للأمراض والآفات.', imageUrl: '' },
+
+            // أسمدة عضوية ومنشطات حيوية (Organic Fertilizers and Biostimulants)
+            { name: 'تكامين القا', category: 'أسمدة عضوية ومنشطات حيوية', description: 'سماد طبيعي مركز من طحالب بحرية للرش الورقي (صنع في إسبانيا).', imageUrl: 'https://iili.io/FlI21f4.md.jpg' },
+            { name: 'تكامين رايز', category: 'أسمدة عضوية ومنشطات حيوية', description: 'منشط حيوي.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'هيفي صم روت', category: 'أسمدة عضوية ومنشطات حيوية', description: 'منشط بدائي لنمو الجذور.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'اتش ٨٥٠', category: 'أسمدة عضوية ومنشطات حيوية', description: 'سماد بودرة عضوي يحسن التربة.', imageUrl: 'https://iili.io/FlIfKrv.md.jpg' },
+            { name: 'هيومك اكتف', category: 'أسمدة عضوية ومنشطات حيوية', description: 'سماد EC FERTILIZER.', imageUrl: 'https://iili.io/FlIBKRp.md.jpg' },
+            { name: 'روتكس', category: 'أسمدة عضوية ومنشطات حيوية', description: 'منشط محفز لنمو الجذور ويزيد إنتاج الثمار.', imageUrl: 'https://iili.io/FlInjiF.md.jpg' },
+            { name: 'كواغ فروت', category: 'أسمدة عضوية ومنشطات حيوية', description: 'سماد بودر يحسن الإزهار ويزيد حجم الثمار (0.5 كجم، صنع في إسبانيا).', imageUrl: 'https://iili.io/FlIujiN.md.jpg' },
+            { name: 'هيومك بلص', category: 'أسمدة عضوية ومنشطات حيوية', description: 'هيومات بوتاسيوم ممتاز مناسب لجميع المحاصيل.', imageUrl: 'https://iili.io/FlIxeuR.md.jpg' },
+            { name: 'ناوتا', category: 'أسمدة عضوية ومنشطات حيوية', description: 'محفز حيوي بودر بأحماض أمينية وطحالب بحرية (صنع في إسبانيا).', imageUrl: 'https://iili.io/FlIRuCQ.md.jpg' },
+            { name: 'هيومك الماني 85', category: 'أسمدة عضوية ومنشطات حيوية', description: 'محسن تربة من أملاح البوتاسيوم للأحماض الدبالية (صنع في ألمانيا).', imageUrl: 'https://iili.io/FlI5vJ1.md.jpg' },
+            { name: 'اجري ام 40', category: 'أسمدة عضوية ومنشطات حيوية', description: 'مخصب عضوي سائل بـ 40% أحماض دبالية (صنع في إسبانيا).', imageUrl: '' }, // No direct image URL provided
+            { name: 'هيفي ماكس', category: 'أسمدة عضوية ومنشطات حيوية', description: 'عناصر صغرى.', imageUrl: 'https://iili.io/FlIaXxs.md.jpg' },
+            { name: 'هيومك سعودي', category: 'أسمدة عضوية ومنشطات حيوية', description: 'يحفز نمو النبات ويزيد الإنتاج.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'كال ان', category: 'أسمدة عضوية ومنشطات حيوية', description: 'كالسيوم.', imageUrl: 'https://iili.io/FlIEl9V.md.jpg' },
+            
+            // الأدوية (Medicines) - New Category
+            { name: 'دواء تيرامايسين (مضاد حيوي)', category: 'الأدوية', description: 'مضاد حيوي واسع الطيف يستخدم لعلاج الأمراض البكتيرية في الدواجن والمواشي.', imageUrl: '' },
+            { name: 'دواء فيتامين AD3E (لتعزيز النمو)', category: 'الأدوية', description: 'مكمل فيتامينات لتعزيز النمو، تحسين الخصوبة، ورفع المناعة في الحيوانات الزراعية.', imageUrl: '' },
+            { name: 'دواء سلفا ديميدين (لمكافحة الكوكسيديا)', category: 'الأدوية', description: 'يستخدم لعلاج والوقاية من أمراض الكوكسيديا في الدواجن والأرانب.', imageUrl: '' },
+            { name: 'دواء إيفرمكتين (مضاد للطفيليات)', category: 'الأدوية', description: 'مضاد واسع الطيف للطفيليات الداخلية والخارجية في الأغنام والماعز والأبقار.', imageUrl: '' },
+            { name: 'دواء ديكساميثازون (مضاد للالتهاب)', category: 'الأدوية', description: 'يستخدم كمضاد للالتهاب ولتقليل التورم في حالات مختلفة للحيوانات.', imageUrl: '' },
+            { name: 'دواء كالسيوم بورون سائل (للوقاية من نقص العناصر)', category: 'الأدوية', description: 'مكمل غذائي سائل يحتوي على الكالسيوم والبورون لدعم صحة النباتات ومنع تشققات الثمار.', imageUrl: '' },
+            { name: 'دواء فطريات التربة (لمكافحة الأمراض الفطرية الجذرية)', category: 'الأدوية', description: 'يستخدم لمكافحة الفطريات الضارة التي تصيب جذور النباتات وتسبب الذبول والتعفن.', imageUrl: '' },
+
+            // مواد بلاستيكية (Plastic Materials)
+            { name: 'بوري بلاستك', category: 'مواد بلاستيكية', description: 'أنابيب بلاستيكية عالية الجودة (تركي + عراقي) بجميع الأحجام: 2.5، 3، 4، 5 بوصة.', imageUrl: 'https://iili.io/FlBfJdF.md.jpg' },
+            { name: 'نوزل كامل', category: 'مواد بلاستيكية', description: 'نوزل كامل (باكم أو نسيم وغيرها) تركي + عراقي.', imageUrl: 'https://iili.io/FlBfJdF.md.jpg' },
+            { name: 'مصغر', category: 'مواد بلاستيكية', description: 'مصغرات بجميع الأحجام.', imageUrl: 'https://iili.io/FlBfJdF.md.jpg' },
+            { name: 'صليب', category: 'مواد بلاستيكية', description: 'وصلات صليب بجميع الأحجام.', imageUrl: 'https://iili.io/FlBfJdF.md.jpg' },
+            { name: 'حرف تي', category: 'مواد بلاستيكية', description: 'وصلات حرف تي بجميع الأحجام.', imageUrl: 'https://iili.io/FlBfJdF.md.jpg' },
+            { name: 'سداد', category: 'مواد بلاستيكية', description: 'سدادات بجميع الأحجام.', imageUrl: 'https://iili.io/FlBfJdF.md.jpg' },
+            { name: 'قفل', category: 'مواد بلاستيكية', description: 'أقفال بجميع الأحجام.', imageUrl: 'https://iili.io/FlBfJdF.md.jpg' },
+            { name: 'بداية خط', category: 'مواد بلاستيكية', description: 'بدايات خط بجميع الأحجام.', imageUrl: 'https://iili.io/FlBfJdF.md.jpg' },
+            { name: 'عكس', category: 'مواد بلاستيكية', description: 'وصلات عكس بجميع الأحجام.', imageUrl: 'https://iili.io/FlBfJdF.md.jpg' },
+            { name: 'زبانة + ربل + سداد + حرف تي', category: 'مواد بلاستيكية', description: 'مجموعة زبانة، ربل، سداد، وحرف تي بجميع الأحجام.', imageUrl: 'https://iili.io/FlBfJdF.md.jpg' },
+
+            // البذور (Seeds)
+            { name: 'بذور طماطم', category: 'البذور', description: 'جميع أنواع بذور الطماطم.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'بذور خيار', category: 'البذور', description: 'جميع أنواع بذور الخيار.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'بذور ركي', category: 'البذور', description: 'جميع أنواع بذور الركي.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'بذور فلفل', category: 'البذور', description: 'جميع أنواع بذور الفلفل.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'بذور ترعوزي', category: 'البذور', description: 'جميع أنواع بذور الترعوزي.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'بذور بيذنجان', category: 'البذور', description: 'جميع أنواع بذور الباذنجان.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'بذور بصل', category: 'البذور', description: 'جميع أنواع بذور البصل.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'بذور باميا', category: 'البذور', description: 'جميع أنواع بذور البامية.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'بذور اذرة علفية + صفراء', category: 'البذور', description: 'جميع أنواع بذور الذرة العلفية والصفراء.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'بذور جت + برسيم', category: 'البذور', description: 'جميع أنواع بذور الجت والبرسيم.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' },
+            { name: 'بذور حشائش', category: 'البذور', description: 'جميع أنواع بذور الحشائش.', imageUrl: 'https://iili.io/FlI30TF.md.jpg' }
+        ];
+
+        const arabCropsData = {
+            "الحبوب": {
+                "القمح": ["بعلي", "مروي"],
+                "الشعير": ["بعلي", "مروي"],
+                "الذرة": ["بعلي", "مروي"],
+                "الأرز": ["مروي"],
+                "الذرة الرفيعة": ["بعلي", "مروي"],
+                "الدخن": ["بعلي", "مروي"]
+            },
+            "البقوليات": {
+                "الحمص": ["بعلي", "مروي"],
+                "العدس": ["بعلي", "مروي"],
+                "الفول": ["بعلي", "مروي"],
+                "الترمس": ["بعلي", "مروي"],
+                "البازلاء": ["بعلي", "مروي"]
+            },
+            "الفاكهة": {
+                "التمور": ["مروي"],
+                "الزيتون": ["مروي", "بعلي"],
+                "الحمضيات (الليمون، البرتقال، اليوسفي، الجريب فروت)": ["مروي"],
+                "العنب": ["مروي", "بعلي"],
+                "الرمان": ["مروي"],
+                "الموز": ["مروي"],
+                "المانجو": ["مروي"],
+                "التفاح": ["مروي", "بعلي"],
+                "الكمثرى": ["مروي", "بعلي"],
+                "التوت": ["مروي"],
+                "الخوخ": ["مروي", "بعلي"],
+                "البرقوق": ["مروي", "بعلي"],
+                "الجوافة": ["مروي"],
+                "البابايا": ["مروي"],
+                "الشمام": ["مروي", "بعلي"],
+                "البطيخ": ["مروي", "بعلي"],
+                "اللوز": ["بعلي", "مروي"],
+                "الفستق": ["بعلي", "مروي"], 
+                "الجوز": ["بعلي", "مروي"],
+                "التين": ["بعلي", "مروي"],
+                "الصبار (التين الشوكي)": ["بعلي"]
+            },
+            "الخضروات": {
+                "الطماطم": ["مروي"],
+                "البطاطس": ["مروي"],
+                "البصل": ["مروي"],
+                "الباذنجان": ["مروي"],
+                "الخيار": ["مروي"],
+                "الكوسا": ["مروي"],
+                "الملفوف": ["مروي"],
+                "القرنبيط": ["مروي"],
+                "الجزر": ["مروي"],
+                "البازلاء": ["مروي"],
+                "الفاصوليا الخضراء": ["مروي"],
+                "الخس": ["مروي"],
+                "السبانخ": ["مروي"],
+                "الجرجير": ["مروي"],
+                "الفلفل": ["مروي"],
+                "الثوم": ["مروي"],
+                "البامية": ["مروي"],
+                "الشمندر": ["مروي"],
+                "الفجل": ["مروي"]
+            },
+            "المحاصيل النقدية والصناعية": {
+                "القطن": ["مروي"],
+                "قصب السكر": ["مروي"],
+                "بنجر السكر": ["مروي"],
+                "التبغ": ["مروي"],
+                "الزعفران": ["مروي"],
+                "القهوة": ["مروي"],
+                "القات": ["مروي"],
+                "الأعشاب الطبية (مثل النعناع، الزعتر، البابونج)": ["مروي", "بعلي"],
+                "الزهور الزينة": ["مروي"],
+                "نباتات العطور والألياف ومستحضرات التجميل": ["مروي"],
+                "السمسم": ["مروي", "بعلي"],
+                "عباد الشمس": ["مروي", "بعلي"],
+                "فول الصويا": ["مروي"]
+            },
+            "محاصيل الأعلاف": {
+                "البرسيم": ["مروي", "بعلي"],
+                "البيقية": ["مروي", "بعلي"],
+                "البرسيم الحجازي": ["مروي", "بعلي"],
+                "الذرة الرفيعة العلفية": ["مروي", "بعلي"]
+            }
+        };
+
+        // Fictional Forum Posts Data (Updated: support title unified)
+        const forumPosts = [
+            {
+                farmer: "أبو محمد من النجف",
+                date: "2025/11/20",
+                question: "لدي حقل قمح كبير ولاحظت ظهور بقع صدأ على الأوراق. ما هو العلاج الفعال الذي توفره العواد، وكيف أطلب المنتج؟",
+                answer: {
+                    support: "الرد من الدعم الفني لشركة العواد",
+                    content: `أهلاً بك يا أبا محمد، مرض صدأ القمح (Rust) خطير و يحتاج تدخل سريع.
+**1. التشخيص:** الصور التي أرسلتها تؤكد الإصابة بصدأ الأوراق (Leaf Rust)، وهو مرض فطري يقلل من كفاءة التمثيل الضوئي وبالتالي يؤثر على المحصول.
+**2. العلاج الموصى به:** نوصيك باستخدام **مبيد زوكس ستار** (Azoxystrobin + Difenoconazole). هذا المبيد فطري جهازي ووقائي/علاجي بتركيبة مزدوجة تقضي على الفطريات وتمنع انتشارها.
+**3. الجرعة:** الجرعة الموصى بها هي 0.5 لتر لكل 1000 لتر ماء (أو حسب توصيات العبوة). يجب الرش عند بداية ظهور الأعراض وتكراره بعد 10-14 يوماً إذا استمرت الإصابة.
+**4. طريقة الطلب:** اذهب إلى صفحة 'منتجاتنا' -> 'مبيدات فطرية'، وابحث عن **زوكس ستار**. اضغط على زر 'طلب عبر الواتساب'. نتمنى لك موسماً وفيراً.`
+                }
+            },
+            {
+                farmer: "فاطمة من ديالى",
+                date: "2025/11/23",
+                question: "أزرع الطماطم في بيوت بلاستيكية، وألاحظ ذبولاً في الشتلات الصغيرة وتعفناً في منطقة التاج. هل هذا نقص في العناصر أم مرض فطري؟",
+                answer: {
+                    support: "الرد من الدعم الفني لشركة العواد",
+                    content: `تحية طيبة يا أخت فاطمة، الأعراض التي وصفتها تشير بقوة إلى مرض **ذبول البادرات (Damping-off)** أو **تعفن الجذور**، وغالباً ما تسببه فطريات البيثيوم والفايتوفثورا بسبب الرطوبة العالية.
+**1. العلاج الموصى به:** نوصي باستخدام **مبيد افيكور** (Propamocarb Hydrochloride 72.2%)، وهو مبيد فطري جهازي ممتاز لمكافحة الفطريات البيضية.
+**2. الوقاية المستقبلية:** ننصح باستعمال **روتكس** (منشط محفز لنمو الجذور) لتقوية الشتلات.
+**3. الاستخدام:** يطبق **افيكور** عن طريق الري (حقن في نظام الري) أو الرش على منطقة الجذور بجرعات دقيقة. للطلب، يمكنك التواصل معنا لتحديد الكمية المناسبة والشحن.`
+                }
+            },
+            {
+                farmer: "علي من أربيل",
+                date: "2025/11/24",
+                question: "أريد زيادة حجم ثمار الخيار لدي، ما هو أفضل سماد عالي البوتاسيوم وكم هي نسبة النيتروجين به؟ وهل يمكن استخدامه مع الأحماض الأمينية؟",
+                answer: {
+                    support: "الرد من الدعم الفني لشركة العواد",
+                    content: `مرحباً بك أخي علي، لزيادة حجم الثمار (الخيار)، يجب التركيز على البوتاسيوم في مرحلة الإثمار.
+**1. السماد الموصى به:** نوصي باستخدام سماد **بيور بلص 12-12-44+TE**. هو سماد مركب عالي البوتاسيوم (44%).
+**2. التحليل:** يحتوي على **12% نيتروجين**، وهي نسبة مناسبة للحفاظ على النمو الخضري دون طغيان على الإثمار.
+**3. الاستخدام مع المنشطات الحيوية:** يمكن استخدامه بأمان مع الأحماض الأمينية مثل **ناوتا** (محفز حيوي بودر) لزيادة كفاءة الامتصاص.
+**4. للطلب:** المنتجات متوفرة، ويمكنك طلبها عبر الواتساب لتحديد الجرعة الدقيقة المناسبة.`
+                }
+            },
+            // NEW FORUM QUESTIONS (Iraq Focus)
+            {
+                farmer: "جاسم من البصرة",
+                date: "2025/12/01",
+                question: "أواجه مشكلة الملوحة في تربة حقل الذرة الصفراء بالبصرة. ما هو الحل المتاح لتقليل تأثير الملوحة وزيادة امتصاص العناصر؟",
+                answer: {
+                    support: "الرد من الدعم الفني لشركة العواد",
+                    content: `مشكلة الملوحة في تربة البصرة شائعة وتحتاج إلى إدارة خاصة.
+**1. التشخيص:** الملوحة العالية (EC) تمنع الجذور من امتصاص الماء والمغذيات بفعالية وتسبب تسمم أيوني.
+**2. الحل الموصى به:** نوصي باستخدام **سماد هيومك الماني 85** (محسن تربة من أملاح البوتاسيوم للأحماض الدبالية) أو **هيومك بلص**.
+**3. آلية العمل:** الأحماض الدبالية تحسن من بنية التربة الطينية وتزيد من قدرتها على تبادل الكاتيونات، والأهم من ذلك، أنها تخلب الأملاح الضارة وتحرر العناصر الغذائية المحبوسة في التربة (مثل الكالسيوم والبوتاسيوم)، مما يقلل من الضرر الناتج عن الملوحة.
+**4. الاستخدام:** يطبق عن طريق الري (التسميد) في بداية الموسم وبشكل دوري. للطلب والاستفسار عن الجرعات الدقيقة، يرجى التواصل معنا.`
+                }
+            },
+            {
+                farmer: "يوسف من كركوك",
+                date: "2025/12/03",
+                question: "ظهرت لدي بقع بنية كبيرة ومائلة للسواد على ثمار البطيخ، وهي تتوسع بسرعة مع ارتفاع الرطوبة ليلاً. ما هو المرض وطريقة مكافحته؟",
+                answer: {
+                    support: "الرد من الدعم الفني لشركة العواد",
+                    content: `هذه الأعراض مطابقة لمرض **الأنثراكنوز (Anthracnose)** أو **اللفحة (Blight)**، وهي أمراض فطرية شائعة في القرعيات (البطيخ) في ظروف الرطوبة.
+**1. العلاج الموصى به:** نوصي بخلط مبيدين لضمان الفعالية المزدوجة:
+    * **مبيد رادوكسيل** (Metalaxyl + Mancozeb): مبيد جهازي ووقائي وعلاجي فعال ضد اللفحات.
+    * **مبيد ديفكور** (Difenoconazole 250 EC): مبيد فطري جهازي ووقائي وعلاجي يعمل على مجموعة واسعة من الفطريات.
+**2. الجرعة:** الرش بجرعات موصى بها من المبيدين معاً (بشكل متتابع) في بداية الإصابة وتكرار الرش أسبوعياً حتى السيطرة على المرض.
+**3. تنبيه:** يجب إزالة وحرق الثمار والأوراق المصابة بشدة لتقليل مصدر العدوى في الحقل، والالتزام بفترة الأمان قبل الحصاد.`
+                }
+            },
+            {
+                farmer: "سارة من الموصل",
+                date: "2025/12/05",
+                question: "أنا أربي الأغنام ولاحظت وجود طفيليات خارجية (قمل وقراد) عليها. هل توفرون أدوية بيطرية لمعالجة ذلك؟",
+                answer: {
+                    support: "الرد من الدعم الفني لشركة العواد",
+                    content: `بالتأكيد، نوفر مجموعة من الأدوية البيطرية ضمن فئة **الأدوية**.
+**1. المنتج الموصى به:** نوصي باستخدام **دواء إيفرمكتين (مضاد للطفيليات)**. وهو مضاد واسع الطيف للطفيليات الداخلية والخارجية (القراد، القمل، الجرب) في الأغنام والماعز والأبقار.
+**2. آلية الاستخدام:** يتم حقنه تحت الجلد (Subcutaneous Injection) بجرعة محددة حسب وزن الحيوان وحالته.
+**3. تنبيه:** يجب استشارة طبيب بيطري لتحديد الجرعة الدقيقة وتطبيق العلاج بشكل سليم، والالتزام بفترة التحريم قبل استهلاك لحوم أو حليب الحيوان. للطلب، المنتج متوفر ضمن 'منتجاتنا' -> 'الأدوية'.`
+                }
+            },
+            {
+                farmer: "أحمد من الناصرية",
+                date: "2025/12/08",
+                question: "الخضروات الورقية (الخس والسبانخ) لدي تصاب بالمن والذبابة البيضاء في وقت واحد. ما هو المبيد الأفضل لمكافحة الحشرات الثاقبة الماصة في هذه المرحلة؟",
+                answer: {
+                    support: "الرد من الدعم الفني لشركة العواد",
+                    content: `لمكافحة الحشرات الثاقبة الماصة كالمن والذبابة البيضاء معاً، أنت بحاجة لمبيد جهازي قوي ذو فاعلية ملامسة أيضاً.
+**1. المنتج الموصى به:** نوصي باستخدام **مبيد تكنو ستار** (حشري وعناكبي جهازي)، أو **مبيد ازيرا** (حشري وعناكبي جهازي). كلاهما يوفران حماية قوية طويلة الأمد.
+**2. الميزة الجهازية:** هذه المبيدات تخترق أنسجة النبات، مما يجعلها فعالة ضد الحشرات التي تختبئ على السطح السفلي للأوراق (مثل الذبابة البيضاء) أو الحشرات الماصة التي تتغذى على العصارة النباتية (مثل المن).
+**3. التحذير:** يرجى الالتزام الصارم بجرعة الرش وفترة الأمان قبل الحصاد، خاصة للمحاصيل الورقية سريعة النضج.`
+                }
+            },
+            {
+                farmer: "حسين من المثنى",
+                date: "2025/12/10",
+                question: "أعاني من نقص شديد في عنصر الفوسفور في بداية نمو محصول البطاطس، ما هو أفضل سماد سائل (معلق) عالي الفوسفور يمكن إضافته مع ماء الري لتصحيح النقص بسرعة؟",
+                answer: {
+                    support: "الرد من الدعم الفني لشركة العواد",
+                    content: `نقص الفوسفور في المراحل المبكرة للبطاطس أمر حاسم لنمو الجذور والدرنات.
+**1. السماد الموصى به:** نوصي باستخدام **سطل ماغنوم هايفيد 18-46-0+2% MgO+** أو **ماغنوم الترا سول 18-44-00**. هذه الأسمدة هي معلقات عالية الفوسفور ($P^2O^5$ بنسبة 44-46%).
+**2. الميزة:** كونه سماد معلق (سائل أو بودرة قابلة للذوبان)، فإنه يضمن ذوباناً وامتصاصاً أسرع بكثير من الأسمدة الحبيبية الصلبة، مما يعالج النقص بسرعة عبر شبكة الري بالتنقيط.
+**3. أهمية المغنيسيوم (MgO):** إضافة المغنيسيوم في الهايفيد (2%) مهمة جداً للبطاطس، حيث يعزز المغنيسيوم عملية التمثيل الضوئي (مكون أساسي للكلوروفيل).
+**4. للطلب:** يمكنك زيارة أقرب مكتب أو التواصل مع فريق المبيعات لتوفير الكمية المطلوبة بالجرعة المناسبة.`
+                }
+            }
+        ];
+
+
+        // Correct WhatsApp number with country code for Iraq (+964)
+        const whatsappNumber = '9647509774788'; 
+
+        // --- Network Status & Offline Check ---
+        const networkStatusElement = document.getElementById('network-status');
+
+        function updateNetworkStatus() {
+            if (navigator.onLine) {
+                networkStatusElement.innerHTML = '<i class="fas fa-wifi text-green-500 ml-1"></i> متصل بالإنترنت (الخدمات الذكية متاحة)';
+                networkStatusElement.classList.remove('text-red-500');
+                networkStatusElement.classList.add('text-green-700');
+            } else {
+                networkStatusElement.innerHTML = '<i class="fas fa-exclamation-triangle text-red-500 ml-1"></i> غير متصل بالإنترنت (الخدمات الذكية متوقفة)';
+                networkStatusElement.classList.remove('text-green-700');
+                networkStatusElement.classList.add('text-red-500');
+            }
+        }
+
+        function checkOnlineStatus(featureName) {
+            if (!navigator.onLine) {
+                resultModal.querySelector('#modal-title').innerText = "غير متصل بالإنترنت";
+                resultModal.querySelector('#modal-body').innerHTML = `<div class="text-red-700 p-2 border border-red-300 rounded-lg">
+                    <i class="fas fa-exclamation-circle fa-2x mb-3"></i>
+                    <p class="font-bold text-lg mb-2">عذراً، خدمة ${featureName} غير متاحة حالياً.</p>
+                    <p class="text-sm">هذه الميزة تعتمد على الذكاء الاصطناعي (AI) الخارجي. يرجى الاتصال بالشبكة والمحاولة مرة أخرى.</p>
+                    <p class="text-sm mt-3">**البدائل:** يمكنك تصفح المنتدى المحلي أو طلب مساعدة مباشرة عبر الواتساب.</p>
+                    </div>`;
+                showModal('result-modal', false);
+                return false;
+            }
+            return true;
+        }
+
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+
+
+        // --- Navigation Logic ---
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            // Show the selected page
+            document.getElementById(pageId).classList.add('active');
+
+            // Update active state in nav bar
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            // Find the nav item that corresponds to the pageId and activate it
+            const navItems = document.querySelectorAll('.nav-item');
+            // Assign active class based on pageId
+            if (pageId === 'home') navItems[0].classList.add('active');
+            else if (pageId === 'diagnose') navItems[1].classList.add('active');
+            else if (pageId === 'products') navItems[2].classList.add('active'); 
+            else if (pageId === 'general-notes') navItems[3].classList.add('active'); 
+            else if (pageId === 'forum') navItems[4].classList.add('active'); 
+
+            // Special handling for dynamic content generation
+            if (pageId === 'products') {
+                generateAllProductsContent();
+            }
+            if (pageId === 'arab-crops') {
+                generateArabCropsContent();
+            }
+            if (pageId === 'forum') {
+                generateForumContent();
+            }
+        }
+
+        // --- Modal Logic ---
+        const resultModal = document.getElementById('result-modal');
+        const assistantModal = document.getElementById('assistant-modal');
+        const resultModalCloseButton = resultModal.querySelector('.modal-content button.absolute');
+
+        // Function to handle backdrop clicks for result modal
+        function handleResultModalBackdropClick(event) {
+            if (event.target === resultModal) {
+                // Prevent closing if clicked on backdrop while analysis is loading
+                event.stopPropagation();
+            }
+        }
+
+        function showModal(modalId, isAnalysisLoading = false) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('hidden');
+
+            if (modalId === 'result-modal' && isAnalysisLoading) {
+                // Hide close button and prevent backdrop clicks during analysis loading
+                resultModalCloseButton.classList.add('hidden');
+                resultModal.addEventListener('click', handleResultModalBackdropClick);
+            } else {
+                // Ensure close button is visible and backdrop click is allowed otherwise
+                resultModalCloseButton.classList.remove('hidden');
+                resultModal.removeEventListener('click', handleResultModalBackdropClick);
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('hidden');
+            // Always ensure close button is visible and backdrop click listener is removed when closing
+            if (modalId === 'result-modal') {
+                resultModalCloseButton.classList.remove('hidden');
+                resultModal.removeEventListener('click', handleResultModalBackdropClick);
+            }
+        }
+
+        // --- Rewards System Variables (Kept for compatibility, but hidden) ---
+        let currentStars = 0; 
+        const starsPerProductOrder = 10; 
+
+        function updateStars(amount) {
+            // Function exists for product links compatibility, but is effectively disabled from UI
+            // currentStars += amount;
+        }
+
+        async function showLoaderAndAnalyze(callback, serviceType) {
+            if (!checkOnlineStatus(serviceType)) return; // <-- OFFLINE CHECK
+
+            // Show modal and loader, hide result content, and disable closing during loading
+            showModal('result-modal', true); 
+            resultModal.querySelector('#modal-result').style.display = 'none';
+            resultModal.querySelector('#modal-loader').style.display = 'block';
+            
+            // Allow UI to update before starting AI analysis
+            await new Promise(resolve => setTimeout(resolve, 50)); 
+
+            try {
+                await callback();
+            } catch (error) {
+                console.error("Error during analysis:", error);
+                resultModal.querySelector('#modal-title').innerText = "خطأ في الاتصال بالخادم";
+                resultModal.querySelector('#modal-body').innerText = "عذراً، حدث خطأ أثناء الاتصال بخادم الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.";
+            } finally {
+                // Hide loader, show result content, and re-enable closing after analysis
+                resultModal.querySelector('#modal-loader').style.display = 'none';
+                resultModal.querySelector('#modal-result').style.display = 'block';
+                resultModalCloseButton.classList.remove('hidden'); // Ensure close button is visible
+                resultModal.removeEventListener('click', handleResultModalBackdropClick); // Re-enable backdrop click
+            }
+        }
+
+        // --- Helper for file to Base64 (for image analysis) ---
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]); // Get base64 string without data:image/png;base64,
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // --- AI Analysis Functions (Model updated to gemini-2.5-flash-preview-09-2025) ---
+        async function analyzeDisease() {
+            const symptomDescription = document.getElementById('symptom-description').value.trim();
+            const fileInput = document.getElementById('disease-image-upload'); 
+            const hasImage = fileInput.files.length > 0;
+
+            if (!hasImage) { // Image is mandatory for disease diagnosis
+                resultModal.querySelector('#modal-title').innerText = "الصورة مطلوبة";
+                resultModal.querySelector('#modal-body').innerText = "الرجاء رفع صورة للمحصول المصاب لتشخيص المرض.";
+                showModal('result-modal'); // Show modal normally if input is missing
+                return;
+            }
+
+            if (!checkOnlineStatus("تشخيص الأمراض")) return; // <-- OFFLINE CHECK
+
+            await showLoaderAndAnalyze(async () => {
+                let prompt = `بصفتك خبير زراعي في شركة العواد، بناءً على المعلومات التالية: `;
+                let parts = [];
+
+                if (symptomDescription) {
+                    prompt += `الأعراض الموصوفة: "${symptomDescription}". `;
+                }
+                
+                const file = fileInput.files[0];
+                const base64ImageData = await fileToBase64(file);
+                parts.push({
+                    inlineData: {
+                        mimeType: file.type,
+                        data: base64ImageData
+                    }
+                });
+                prompt += `وصورة المحصول المرفقة. `;
+                
+                prompt += `يرجى تشخيص المرض المحتمل وتحديد المحصول المصاب إن أمكن من خلال الوصف/الصورة، ثم تقديم توصيات علاجية محددة (مثل نوع المبيد/الدواء، الجرعة، طريقة الاستخدام). أجب باللغة العربية الفصحى وبشكل موجز ومفيد.`;
+                
+                parts.unshift({ text: prompt }); // Add the prompt at the beginning
+
+                const payload = { contents: [{ role: "user", parts: parts }] };
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                let aiResponse = "عذراً، لم أتمكن من تشخيص المرض حالياً. يرجى المحاولة مرة أخرى أو التواصل مع خبير.";
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    aiResponse = result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Unexpected API response structure for disease diagnosis:", result);
+                }
+
+                resultModal.querySelector('#modal-title').innerText = "نتائج تشخيص المرض";
+                resultModal.querySelector('#modal-body').innerText = aiResponse;
+            }, 'تشخيص الأمراض'); 
+        }
+
+        async function analyzeSoil() {
+            const ph = document.getElementById('soil-ph').value;
+            const nitrogen = document.getElementById('soil-nitrogen').value;
+            const phosphorus = document.getElementById('soil-phosphorus').value;
+            const potassium = document.getElementById('soil-potassium').value;
+            const fileInput = document.getElementById('soil-image-upload');
+            const hasNumericalData = ph || nitrogen || phosphorus || potassium;
+            const hasImage = fileInput.files.length > 0;
+            const hasInput = hasNumericalData || hasImage;
+
+
+            if (!hasInput) { 
+                resultModal.querySelector('#modal-title').innerText = "إدخال المشكلة مطلوب";
+                resultModal.querySelector('#modal-body').innerText = "الرجاء إدخال بعض بيانات التحليل أو رفع صورة للتربة للمتابعة.";
+                showModal('result-modal'); // Show modal normally if input is missing
+                return;
+            }
+
+            if (!checkOnlineStatus("تحليل التربة")) return; // <-- OFFLINE CHECK
+
+            await showLoaderAndAnalyze(async () => {
+                let prompt = "بصفتك خبير زراعي في شركة العواد، يرجى تحليل خصائص التربة وتقديم توصيات لتحسينها بناءً على المعلومات التالية: ";
+                let parts = [];
+
+                if (hasNumericalData) {
+                    let numericalDetails = [];
+                    if (ph) numericalDetails.push(`درجة الحموضة (pH): ${ph}`);
+                    if (nitrogen) numericalDetails.push(`النيتروجين: ${nitrogen} ppm`);
+                    if (phosphorus) numericalDetails.push(`الفوسفور: ${phosphorus} ppm`);
+                    if (potassium) numericalDetails.push(`البوتاسيوم: ${potassium} ppm`);
+                    prompt += `بيانات التحليل الرقمية: ${numericalDetails.join(', ')}. `;
+                } else {
+                    prompt += `لا تتوفر بيانات تحليل رقمية. `;
+                }
+
+                if (hasImage) {
+                    const file = fileInput.files[0];
+                    const base64ImageData = await fileToBase64(file);
+                    parts.push({
+                        inlineData: {
+                            mimeType: file.type,
+                            data: base64ImageData
+                        }
+                    });
+                    prompt += `صورة التربة المرفقة. `;
+                } else {
+                    prompt += `لا تتوفر صورة للتربة. `;
+                }
+
+                prompt += "بناءً على هذه المعطيات، ما هو نوع التربة المحتمل، وما هي خصائصها، وما هي التوصيات المحددة لتحسين خصوبتها وصلاحيتها للزراعة؟ أجب باللغة العربية الفصحى وبشكل موجز ومفيد.";
+                
+                parts.unshift({ text: prompt }); // Add the prompt at the beginning
+
+                const payload = { contents: [{ role: "user", parts: parts }] };
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                let aiResponse = "عذراً، لم أتمكن من تحليل التربة حالياً. يرجى المحاولة مرة أخرى أو التواصل مع خبير.";
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    aiResponse = result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Unexpected API response structure for soil analysis:", result);
+                }
+
+                resultModal.querySelector('#modal-title').innerText = "نتائج تحليل التربة";
+                resultModal.querySelector('#modal-body').innerText = aiResponse;
+            }, 'تحليل التربة'); 
+        }
+
+        // Event listener for image preview for Disease Diagnosis
+        document.getElementById('disease-image-upload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const previewDiv = document.getElementById('disease-image-preview');
+            const previewImg = previewDiv.querySelector('img');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewDiv.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewImg.src = '';
+                previewDiv.classList.add('hidden');
+            }
+        });
+
+        // Event listener for image preview for Soil Analysis
+        document.getElementById('soil-image-upload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const previewDiv = document.getElementById('soil-image-preview');
+            const previewImg = previewDiv.querySelector('img');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewDiv.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewImg.src = '';
+                previewDiv.classList.add('hidden');
+            }
+        });
+
+
+        async function analyzeBestCrop() {
+            const country = document.getElementById('country').value.trim(); // "العراق"
+            const governorate = document.getElementById('governorate').value;
+            const center = document.getElementById('center').value.trim();
+            const soilType = document.getElementById('soil-type').value;
+            const climate = document.getElementById('climate').value;
+            const waterAvailability = document.getElementById('water-availability').value;
+            const marketDemand = document.getElementById('market-demand').value;
+            const mainCrop = document.getElementById('main-crop').value;
+
+            if (!governorate) {
+                resultModal.querySelector('#modal-title').innerText = "المحافظة مطلوبة";
+                resultModal.querySelector('#modal-body').innerText = "الرجاء اختيار المحافظة العراقية للحصول على توصية دقيقة.";
+                showModal('result-modal');
+                return;
+            }
+            
+            if (!checkOnlineStatus("تحديد أفضل محصول")) return; // <-- OFFLINE CHECK
+
+            await showLoaderAndAnalyze(async () => {
+                let prompt = `بصفتك خبير زراعي متخصص في الزراعة في العراق (شركة العواد)، بناءً على المعطيات التالية:
+                                البلد: ${country}، المحافظة/الولاية: ${governorate}${center ? '، المركز/المنطقة: ' + center + '.' : '.'}
+                                نوع التربة: ${soilType}، المناخ السائد: ${climate}، توفر المياه: ${waterAvailability}، الطلب في السوق المحلي: ${marketDemand}.
+                `;
+                
+                if (mainCrop) {
+                    prompt += `
+                                المحصول الرئيسي الذي يزرعه المزارع حالياً ويريد حمايته هو: **${mainCrop}**.
+                                **التعليمات الخاصة بالمحصول المرافق:**
+                                1. يرجى تقديم توصية بأفضل محصول **مرافق (Companion Plant)** واحد فقط لزراعته بجانب **${mainCrop}** (مثلاً لمحاربة الآفات أو تحسين التربة أو جذب الحشرات النافعة).
+                                2. اشرح باختصار آلية عمل المحصول المرافق المقترح لحماية ${mainCrop}.
+                                3. يجب أن تكون التوصية منطقية ومناسبة للظروف المناخية في ${governorate}.
+                    `;
+                } else {
+                    prompt += `
+                                لا يوجد محصول رئيسي محدد للحماية.
+                                **التعليمات الخاصة بالتوصية:**
+                                1. يرجى تحديد أفضل 3 محاصيل جديدة موصى بها للزراعة في منطقة ${governorate} بناءً على الظروف البيئية والاقتصادية المذكورة.
+                                2. اشرح باختصار سبب التوصية لكل محصول.
+                    `;
+                }
+                
+                prompt += `أجب باللغة العربية الفصحى، وبشكل موجز ومفيد.`;
+                
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                let aiResponse = "عذراً، لم أتمكن من تحديد أفضل محصول حالياً. يرجى المحاولة مرة أخرى أو التواصل مع خبير.";
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    aiResponse = result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Unexpected API response structure for best crop:", result);
+                }
+
+                resultModal.querySelector('#modal-title').innerText = "توصية المحاصيل (محافظة " + governorate + ")";
+                resultModal.querySelector('#modal-body').innerHTML = formatForumAnswer(aiResponse);
+            }, 'تحديد أفضل محصول');
+        }
+        
+        // --- Product Recommendation by Symptom (LLM) ---
+        async function recommendProductBySymptom() {
+            const symptom = document.getElementById('product-symptom-input').value.trim();
+
+            if (!symptom) {
+                resultModal.querySelector('#modal-title').innerText = "إدخال المشكلة مطلوب";
+                resultModal.querySelector('#modal-body').innerText = "الرجاء وصف المشكلة أو الحاجة (مثل 'دودة القطن' أو 'نقص بوتاسيوم') لتقديم التوصية.";
+                showModal('result-modal');
+                return;
+            }
+
+            if (!checkOnlineStatus("توصية المنتج الذكية")) return; // <-- OFFLINE CHECK
+
+            await showLoaderAndAnalyze(async () => {
+                // Prepare product database as a clean string for the LLM context
+                const productListString = productsDatabase.map(p => 
+                    `الاسم: ${p.name}, الفئة: ${p.category}, الوصف: ${p.description}`
+                ).join('\n---\n');
+
+                const prompt = `بصفتك خبير منتجات شركة العواد الزراعية، قم بتحليل المشكلة أو الحاجة التالية: "${symptom}".
+                بناءً على المشكلة، يرجى تصفية المنتجات في القائمة أدناه واختيار أفضل منتج أو اثنين (لا تزيد عن ثلاثة) من القائمة المتاحة التي تعالج هذه المشكلة مباشرةً.
+                
+                **قائمة المنتجات المتوفرة:**
+                ${productListString}
+                
+                **التعليمات للرد:**
+                1. حدد المشكلة/الحاجة بشكل دقيق.
+                2. قدم التوصية بأفضل منتج (أو منتجين كحد أقصى) من القائمة المذكورة أعلاه فقط.
+                3. اشرح باختصار لماذا هذا المنتج هو الحل الأمثل للمشكلة/الحاجة المحددة.
+                4. اذكر فئة المنتج (مبيد حشري، سماد، الخ).
+                5. يجب أن يكون الرد باللغة العربية الفصحى وبنبرة احترافية وموجزة.`;
+                
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                let aiResponse = "عذراً، لم نتمكن من العثور على توصية مناسبة حالياً بناءً على المشكلة المذكورة.";
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    aiResponse = result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Unexpected API response structure for product recommendation:", result);
+                }
+
+                resultModal.querySelector('#modal-title').innerText = "توصية المنتج الذكية ✨";
+                resultModal.querySelector('#modal-body').innerHTML = formatForumAnswer(aiResponse); // Use the existing formatter
+            }, 'توصية المنتج الذكية');
+        }
+
+
+        // --- Chatbot Logic with Gemini API (Model updated to gemini-2.5-flash-preview-09-2025) ---
+        const chatWindow = document.getElementById('chat-window');
+        const chatInput = document.getElementById('chat-input');
+        const assistantLoading = document.getElementById('assistant-loading');
+
+        function showAssistantModal() {
+            showModal('assistant-modal');
+            chatInput.focus(); // Focus on input when modal opens
+            chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll to bottom
+            if (!navigator.onLine) {
+                // Show immediate offline error if no connection
+                const errorBubble = document.createElement('div');
+                errorBubble.classList.add('chat-bubble', 'received', 'mb-2');
+                errorBubble.innerHTML = `<p class="bg-red-200 text-red-800 rounded-lg py-2 px-4 inline-block">عذراً، المساعد الذكي غير متاح حالياً. يرجى التحقق من اتصالك بالإنترنت.</p>`;
+                chatWindow.appendChild(errorBubble);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+        }
+
+        async function sendChatMessage() {
+            const messageText = chatInput.value.trim();
+            if (messageText === '') return;
+            
+            if (!navigator.onLine) { // Direct offline check for chat modal
+                const errorBubble = document.createElement('div');
+                errorBubble.classList.add('chat-bubble', 'received', 'mb-2');
+                errorBubble.innerHTML = `<p class="bg-red-200 text-red-800 rounded-lg py-2 px-4 inline-block">عذراً، المساعد الذكي غير متاح حالياً. يرجى التحقق من اتصالك بالإنترنت.</p>`;
+                chatWindow.appendChild(errorBubble);
+                chatInput.value = '';
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+                return;
+            }
+
+            // Add user message to chat window
+            const userBubble = document.createElement('div');
+            userBubble.classList.add('chat-bubble', 'sent', 'mb-2'); 
+            userBubble.innerHTML = `<p class="bg-green-500 text-white rounded-lg py-2 px-4 inline-block">${messageText}</p>`;
+            chatWindow.appendChild(userBubble);
+            
+            // Add user message to chat history for API
+            chatHistory.push({ role: "user", parts: [{ text: messageText }] });
+
+            chatInput.value = '';
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            assistantLoading.classList.remove('hidden'); // Show loading indicator
+
+            try {
+                // Call Gemini API
+                const payload = { contents: chatHistory };
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                let botResponse = "عذراً، حدث خطأ ما. يرجو المحاولة مرة أخرى.";
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    botResponse = result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Unexpected API response structure:", result);
+                    botResponse = "عذراً، لم أتمكن من فهم الرد من المساعد الذكي. يرجى المحاولة مرة أخرى.";
+                }
+                
+                // Add bot response to chat window
+                const botBubble = document.createElement('div');
+                botBubble.classList.add('chat-bubble', 'received', 'mb-2'); 
+                botBubble.innerHTML = `<p class="bg-gray-200 text-gray-800 rounded-lg py-2 px-4 inline-block">${botResponse}</p>`;
+                chatWindow.appendChild(botBubble);
+
+                // Add bot response to chat history
+                chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
+
+            } catch (error) {
+                console.log("Error calling Gemini API:", error);
+                const errorBubble = document.createElement('div');
+                errorBubble.classList.add('chat-bubble', 'received', 'mb-2');
+                errorBubble.innerHTML = `<p class="bg-red-200 text-red-800 rounded-lg py-2 px-4 inline-block">عذراً، حدث خطأ في الاتصال بالمساعد الذكي. يرجى التحقق من اتصالك بالإنترنت والمحاولة لاحقاً.</p>`;
+                chatWindow.appendChild(errorBubble);
+            } finally {
+                assistantLoading.classList.add('hidden'); // Hide loading indicator
+                chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll to bottom
+            }
+        }
+
+        // --- Products Page Dynamic Content Generation ---
+        function generateAllProductsContent() {
+            const productsListDiv = document.getElementById('all-products-list');
+            let htmlContent = '';
+
+            // Group products by category
+            const productsByCategory = productsDatabase.reduce((acc, product) => {
+                if (!acc[product.category]) {
+                    acc[product.category] = [];
+                }
+                acc[product.category].push(product);
+                return acc;
+            }, {});
+
+            // Define desired order of categories
+            const categoryOrder = [
+                'المبيدات الحشرية والعناكب',
+                'مبيدات فطرية',
+                'مبيدات أعشاب',
+                'الأسمدة',
+                'أسمدة عضوية ومنشطات حيوية',
+                'الأدوية', // New category added here in order
+                'مواد بلاستيكية', 
+                'البذور'
+            ];
+
+            // Render categories in desired order using <details> for collapsible sections
+            categoryOrder.forEach(category => {
+                if (productsByCategory[category] && productsByCategory[category].length > 0) {
+                    htmlContent += `
+                        <details class="product-category-details card p-0 overflow-hidden">
+                            <summary>
+                                <span>${category}</span>
+                            </summary>
+                            <div class="product-grid">
+                    `;
+                    productsByCategory[category].forEach(product => {
+                        htmlContent += `
+                                <div class="product-item-card">
+                                    ${product.imageUrl ? `<img src="${product.imageUrl}" alt="صورة ${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/80x80/008000/FFFFFF?text=صورة+غير+متوفرة';" class="w-24 h-24 object-contain rounded-md mb-2 shadow-md">` : ''}
+                                    <h4 class="font-bold text-lg text-gray-800 mb-1">${product.name}</h4>
+                                    <p class="text-xs text-gray-700 text-center mb-4">${product.description}</p>
+                                    <a href="https://wa.me/${whatsappNumber}?text=أود الاستفسار عن المنتج: ${product.name}" 
+                                        class="w-full btn-primary font-bold py-2 px-4 rounded-md flex items-center justify-center text-sm" onclick="updateStars(${starsPerProductOrder})">
+                                        <i class="fab fa-whatsapp ml-2"></i> طلب عبر الواتساب
+                                    </a>
+                                </div>
+                        `;
+                    });
+                    htmlContent += `
+                            </div>
+                        </details>
+                    `;
+                }
+            });
+            productsListDiv.innerHTML = htmlContent;
+        }
+
+        // --- Arab Crops Page Content Generation ---
+        function generateArabCropsContent() {
+            const arabCropsDiv = document.getElementById('arab-crops-content');
+            let htmlContent = '';
+
+            for (const category in arabCropsData) {
+                htmlContent += `
+                    <details class="card p-0 overflow-hidden">
+                        <summary class="p-4 font-semibold cursor-pointer text-green-700">${category}</summary>
+                        <div class="p-4 bg-gray-50 border-t">
+                            <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+                `;
+                for (const crop in arabCropsData[category]) {
+                    const irrigationTypes = arabCropsData[category][crop].join(' أو ');
+                    htmlContent += `<li>**${crop}:** (${irrigationTypes})</li>`;
+                }
+                htmlContent += `
+                            </ul>
+                        </div>
+                    </details>
+                `;
+            }
+            arabCropsDiv.innerHTML = htmlContent;
+        }
+        
+        // --- Forum Page Content Generation (Updated) ---
+        function generateForumContent() {
+            const forumContentDiv = document.getElementById('forum-content');
+            let htmlContent = '';
+
+            forumPosts.forEach(post => {
+                htmlContent += `
+                    <div class="forum-post">
+                        <div class="flex justify-between items-center mb-2 text-sm text-gray-500">
+                            <span class="font-bold text-gray-700"><i class="fas fa-user-circle ml-1 text-gray-400"></i> ${post.farmer}</span>
+                            <span>${post.date}</span>
+                        </div>
+                        <p class="forum-question text-base">سؤال: ${post.question}</p>
+                        
+                        <div class="forum-answer">
+                            <p class="support-title"><i class="fas fa-headset mr-1 text-teal-700"></i> ${post.answer.support}</p>
+                            <div class="text-sm text-gray-800 space-y-2">
+                                ${formatForumAnswer(post.answer.content)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            forumContentDiv.innerHTML = htmlContent;
+        }
+        
+        // Helper to format the answer content (basic markdown to HTML)
+        function formatForumAnswer(text) {
+            // Replace **bold** with <strong>
+            let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Replace new lines with <br>
+            formattedText = formattedText.replace(/\n/g, '<br>');
+            return formattedText;
+        }
+
+
+        // Initialize with home page
+        window.onload = function() {
+            updateNetworkStatus();
+            showPage('home');
+        };
+    </script>
+
+</body>
+</html>
+
