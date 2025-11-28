@@ -768,7 +768,6 @@
                     <p class="text-gray-700">
                         <i class="fas fa-phone text-green-600"></i> تواصل: <br>
                         <a href="tel:07508867765" class="text-blue-600 hover:underline">07508867765</a> (عبدالباسط)<br>
-                        <!-- Removed Saif's number (07511500293) as requested -->
                         <a href="tel:07509774788" class="text-blue-600 hover:underline">07509774788</a> (قصي)
                     </p>
                 </div>
@@ -881,6 +880,13 @@
 
 
     <script>
+        // *** GLOBAL CONFIGURATION ***
+        // NOTE: This API key is embedded here as requested. For production security,
+        // it should be stored on a secure backend server.
+        const EMBEDDED_API_KEY = "AIzaSyCjx9bLPt2vzTWQ4CSHmJwqmgfQO8W2dyM"; 
+        const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
+        const API_BASE_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${EMBEDDED_API_KEY}`;
+
         // Store chat history for the AI assistant
         let chatHistory = [{ role: "user", parts: [{ text: "أنا أستخدم تطبيق العواد للزراعة الذكية. أنا مزارع وأرغب في الحصول على نصائح زراعية. اجبني دائما باللغة العربية الفصحى وكن خبيرا زراعيا متخصصا في الزراعة بالوطن العربي." }] }];
         
@@ -1360,9 +1366,14 @@
             try {
                 await callback();
             } catch (error) {
-                console.error("Error during analysis:", error);
+                console.error("Final Error during analysis:", error);
                 resultModal.querySelector('#modal-title').innerText = "خطأ في الاتصال بالخادم";
-                resultModal.querySelector('#modal-body').innerText = "عذراً، حدث خطأ أثناء الاتصال بخادم الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.";
+                resultModal.querySelector('#modal-body').innerHTML = `
+                    عذراً، حدث خطأ أثناء الاتصال بخادم الذكاء الاصطناعي. 
+                    قد تكون المشكلة بسبب ضعف الاتصال أو قيود الشبكة في التطبيق. 
+                    يرجى المحاولة مرة أخرى لاحقًا.
+                    <p class="text-xs mt-2 text-gray-500">${error.message}</p>
+                `;
             } finally {
                 // Hide loader, show result content, and re-enable closing after analysis
                 resultModal.querySelector('#modal-loader').style.display = 'none';
@@ -1382,7 +1393,47 @@
             });
         }
 
-        // --- AI Analysis Functions (Model updated to gemini-2.5-flash-preview-09-2025) ---
+        // --- NEW: Robust API Call Function with Retry and Exponential Backoff ---
+        async function callGeminiApiWithRetry(payload, retries = 3) {
+            // API_BASE_URL uses the EMBEDDED_API_KEY globally.
+            
+            for (let i = 0; i < retries; i++) {
+                try {
+                    console.log(`[API Call] Attempt ${i + 1}: Starting fetch request to ${GEMINI_MODEL}...`);
+                    const response = await fetch(API_BASE_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (!response.ok) {
+                        const errorBody = await response.text();
+                        console.error(`[API ERROR] HTTP Status ${response.status}: ${errorBody}`);
+                        // If it's a critical error (like 400 Bad Request or API key issue), stop retrying
+                        if (response.status >= 400 && response.status < 500) {
+                            throw new Error(`Critical API error (Status ${response.status}). Check API Key or prompt content.`);
+                        }
+                        throw new Error(`Server or network error (Status ${response.status}).`);
+                    }
+
+                    console.log(`[API Call] Attempt ${i + 1} succeeded.`);
+                    return await response.json();
+
+                } catch (error) {
+                    if (i === retries - 1) {
+                        console.error(`[API Call] All attempts failed.`);
+                        throw error;
+                    }
+                    const delay = Math.pow(2, i) * 1000;
+                    console.warn(`[API Call] Attempt ${i + 1} failed. Retrying in ${delay / 1000}s...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+            throw new Error("Failed to connect to the AI server after multiple retries.");
+        }
+
+
+        // --- AI Analysis Functions (Now using callGeminiApiWithRetry) ---
         async function analyzeDisease() {
             const symptomDescription = document.getElementById('symptom-description').value.trim();
             const fileInput = document.getElementById('disease-image-upload'); 
@@ -1395,7 +1446,7 @@
                 return;
             }
 
-            if (!checkOnlineStatus("تشخيص الأمراض")) return; // <-- OFFLINE CHECK
+            if (!checkOnlineStatus("تشخيص الأمراض")) return;
 
             await showLoaderAndAnalyze(async () => {
                 let prompt = `بصفتك خبير زراعي في شركة العواد، بناءً على المعلومات التالية: `;
@@ -1420,16 +1471,9 @@
                 parts.unshift({ text: prompt }); // Add the prompt at the beginning
 
                 const payload = { contents: [{ role: "user", parts: parts }] };
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
+                
+                const result = await callGeminiApiWithRetry(payload);
+                
                 let aiResponse = "عذراً، لم أتمكن من تشخيص المرض حالياً. يرجى المحاولة مرة أخرى أو التواصل مع خبير.";
 
                 if (result.candidates && result.candidates.length > 0 &&
@@ -1463,7 +1507,7 @@
                 return;
             }
 
-            if (!checkOnlineStatus("تحليل التربة")) return; // <-- OFFLINE CHECK
+            if (!checkOnlineStatus("تحليل التربة")) return;
 
             await showLoaderAndAnalyze(async () => {
                 let prompt = "بصفتك خبير زراعي في شركة العواد، يرجى تحليل خصائص التربة وتقديم توصيات لتحسينها بناءً على المعلومات التالية: ";
@@ -1499,16 +1543,9 @@
                 parts.unshift({ text: prompt }); // Add the prompt at the beginning
 
                 const payload = { contents: [{ role: "user", parts: parts }] };
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                
+                const result = await callGeminiApiWithRetry(payload);
 
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
                 let aiResponse = "عذراً، لم أتمكن من تحليل التربة حالياً. يرجى المحاولة مرة أخرى أو التواصل مع خبير.";
 
                 if (result.candidates && result.candidates.length > 0 &&
@@ -1580,7 +1617,7 @@
                 return;
             }
             
-            if (!checkOnlineStatus("تحديد أفضل محصول")) return; // <-- OFFLINE CHECK
+            if (!checkOnlineStatus("تحديد أفضل محصول")) return;
 
             await showLoaderAndAnalyze(async () => {
                 let prompt = `بصفتك خبير زراعي متخصص في الزراعة في العراق (شركة العواد)، بناءً على المعطيات التالية:
@@ -1608,16 +1645,9 @@
                 prompt += `أجب باللغة العربية الفصحى، وبشكل موجز ومفيد.`;
                 
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                
+                const result = await callGeminiApiWithRetry(payload);
 
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
                 let aiResponse = "عذراً، لم أتمكن من تحديد أفضل محصول حالياً. يرجى المحاولة مرة أخرى أو التواصل مع خبير.";
 
                 if (result.candidates && result.candidates.length > 0 &&
@@ -1644,7 +1674,7 @@
                 return;
             }
 
-            if (!checkOnlineStatus("توصية المنتج الذكية")) return; // <-- OFFLINE CHECK
+            if (!checkOnlineStatus("توصية المنتج الذكية")) return;
 
             await showLoaderAndAnalyze(async () => {
                 // Prepare product database as a clean string for the LLM context
@@ -1667,16 +1697,8 @@
                 
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
                 
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const result = await callGeminiApiWithRetry(payload);
 
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
                 let aiResponse = "عذراً، لم نتمكن من العثور على توصية مناسبة حالياً بناءً على المشكلة المذكورة.";
 
                 if (result.candidates && result.candidates.length > 0 &&
@@ -1693,7 +1715,7 @@
         }
 
 
-        // --- Chatbot Logic with Gemini API (Model updated to gemini-2.5-flash-preview-09-2025) ---
+        // --- Chatbot Logic with Gemini API (Now using callGeminiApiWithRetry) ---
         const chatWindow = document.getElementById('chat-window');
         const chatInput = document.getElementById('chat-input');
         const assistantLoading = document.getElementById('assistant-loading');
@@ -1742,16 +1764,8 @@
             try {
                 // Call Gemini API
                 const payload = { contents: chatHistory };
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
+                
+                const result = await callGeminiApiWithRetry(payload);
 
                 let botResponse = "عذراً، حدث خطأ ما. يرجو المحاولة مرة أخرى.";
                 if (result.candidates && result.candidates.length > 0 &&
@@ -1776,7 +1790,7 @@
                 console.log("Error calling Gemini API:", error);
                 const errorBubble = document.createElement('div');
                 errorBubble.classList.add('chat-bubble', 'received', 'mb-2');
-                errorBubble.innerHTML = `<p class="bg-red-200 text-red-800 rounded-lg py-2 px-4 inline-block">عذراً، حدث خطأ في الاتصال بالمساعد الذكي. يرجى التحقق من اتصالك بالإنترنت والمحاولة لاحقاً.</p>`;
+                errorBubble.innerHTML = `<p class="bg-red-200 text-red-800 rounded-lg py-2 px-4 inline-block">عذراً، حدث خطأ في الاتصال بالمساعد الذكي بعد عدة محاولات. يرجى التحقق من اتصالك بالإنترنت والمحاولة لاحقاً.</p>`;
                 chatWindow.appendChild(errorBubble);
             } finally {
                 assistantLoading.classList.add('hidden'); // Hide loading indicator
